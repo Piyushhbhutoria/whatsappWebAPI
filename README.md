@@ -31,6 +31,8 @@ Send Image --> localhost:8080/sendImage?to=1234567890&msg=hello&img=testImg.jpg
 Send bulk text --> localhost:8080/sendBulk?file=test.csv  
 Send bulk image --> localhost:8080/sendBulkImg?file=testImg.csv  
 
+Link to import Postman requests --> https://www.getpostman.com/collections/caee3c3c8a3fc04304d0
+
 ### Demo
 
 Test Text --> [localhost:8080/testText](localhost:8080/testText)  
