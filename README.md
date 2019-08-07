@@ -12,6 +12,7 @@ Works only for numbers in India for now.
 
 1. Download the latest binary release.  
 2. run on your system.  
+3. Create a files folder in the directory where binary is running
 
 or create your binary locally as below
 

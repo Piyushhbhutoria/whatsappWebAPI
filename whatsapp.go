@@ -11,6 +11,7 @@ import (
 	"github.com/kataras/iris/middleware/logger"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -74,7 +75,13 @@ func sendText(ctx iris.Context) {
 func sendBulk(ctx iris.Context) {
 	file := ctx.URLParamDefault("file", "test.csv")
 
-	csvFile, err := os.Open(dir + "/files/" + file)
+	var folder string
+	if runtime.GOOS == "windows" {
+		folder = `\files\`
+	} else {
+		folder = "/files/"
+	}
+	csvFile, err := os.Open(dir + folder + file)
 	if err != nil {
 		panic(err)
 	}
@@ -102,7 +109,13 @@ func sendBulk(ctx iris.Context) {
 func sendBulkImg(ctx iris.Context) {
 	file := ctx.URLParamDefault("file", "testImg.csv")
 
-	csvFile, err := os.Open(dir + "/files/" + file)
+	var folder string
+	if runtime.GOOS == "windows" {
+		folder = `\files\`
+	} else {
+		folder = "/files/"
+	}
+	csvFile, err := os.Open(dir + folder + file)
 	if err != nil {
 		panic(err)
 	}
@@ -182,7 +195,13 @@ func texting(to, mess string) string {
 }
 
 func image(v SendImage) string {
-	img, err := os.Open(dir + "/files/" + v.Image)
+	var folder string
+	if runtime.GOOS == "windows" {
+		folder = `\files\`
+	} else {
+		folder = "/files/"
+	}
+	img, err := os.Open(dir + folder + v.Image)
 	if err != nil {
 		panic("Error reading file: %v" + err.Error())
 		return "Error"
