@@ -10,6 +10,11 @@ Works only for numbers in India for now.
 
 ## Setup
 
+1. Download the latest binary release.  
+2. run on your system.  
+
+or create your binary locally as below
+
 1. Download the repo
 2. run 
 ```shell
