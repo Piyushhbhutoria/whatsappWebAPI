@@ -28,9 +28,10 @@ var (
 )
 
 func init() {
+	fmt.Println("for login error please delete whatsappSession.gob at this folder -> ", os.TempDir())
 	err := login(wac)
 	if err != nil {
-		panic("Error logging in: %v\n" + err.Error())
+		panic("Error logging in: \n" + err.Error())
 		return
 	}
 
@@ -188,7 +189,7 @@ func texting(to, mess string) string {
 
 	msgId, err := wac.Send(msg)
 	if err != nil {
-		panic("Error sending message: %v" + err.Error())
+		panic("Error sending message: to " + to + " " + err.Error())
 		return "Error"
 	}
 	return "Message Sent -> " + to + " : " + msgId
@@ -203,7 +204,7 @@ func image(v SendImage) string {
 	}
 	img, err := os.Open(dir + folder + v.Image)
 	if err != nil {
-		panic("Error reading file: %v" + err.Error())
+		panic("Error reading file: " + err.Error())
 		return "Error"
 	}
 
@@ -218,7 +219,7 @@ func image(v SendImage) string {
 
 	msgId, err := wac.Send(msg)
 	if err != nil {
-		panic("Error sending message: %v" + err.Error())
+		panic("Error sending message: to " + v.Receiver + " " + err.Error())
 		return "Error"
 	}
 	return "Message Sent -> " + v.Receiver + " : " + msgId
