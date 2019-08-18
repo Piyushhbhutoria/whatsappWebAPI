@@ -9,6 +9,7 @@ import (
 	"github.com/iris-contrib/middleware/cors"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/middleware/logger"
+	"github.com/kataras/iris/middleware/recover"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -22,6 +23,13 @@ type SendImage struct {
 	Image    string `json:"image"`
 }
 
+type Results struct {
+	Messages []Messages `json:"messages"`
+}
+type Messages struct {
+	Content string `json:"content"`
+}
+
 var (
 	wac, _ = whatsapp.NewConn(5 * time.Second)
 	dir, _ = filepath.Abs(filepath.Dir(os.Args[0]))
@@ -29,6 +37,8 @@ var (
 
 func init() {
 	fmt.Println("for login error please delete whatsappSession.gob at this folder -> ", os.TempDir())
+	fmt.Println("running on " + string(runtime.NumCPU()) + "cores.")
+
 	err := login(wac)
 	if err != nil {
 		panic("Error logging in: \n" + err.Error())
@@ -39,9 +49,31 @@ func init() {
 }
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	app := iris.New()
 	app.Logger().SetLevel("debug")
-	app.Use(logger.New())
+	requestLogger := logger.New(logger.Config{
+		// Status displays status code
+		Status: true,
+		// IP displays request's remote address
+		IP: true,
+		// Method displays the http method
+		Method: true,
+		// Path displays the request path
+		Path: true,
+		// Query appends the url query to the Path.
+		Query: true,
+
+		// if !empty then its contents derives from `ctx.Values().Get("logger_message")
+		// will be added to the logs.
+		MessageContextKeys: []string{"logger_message"},
+
+		// if !empty then its contents derives from `ctx.GetHeader("User-Agent")
+		MessageHeaderKeys: []string{"User-Agent"},
+	})
+	app.Use(requestLogger)
+	app.Use(recover.New())
 	// using Cors
 	crs := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"}, // allows everything, use that to change the hosts.
@@ -52,12 +84,10 @@ func main() {
 		v1.Get("/ping", ping) // Test url
 		v1.Get("/sendText", sendText)
 		v1.Get("/sendBulk", sendBulk)
-		v1.Get("/sendBulkImg", sendBulkImg)
 		v1.Get("/sendImage", sendImage)
-		v1.Get("/testText", testText)
-		v1.Get("/testImage", testImage)
+		v1.Get("/sendBulkImg", sendBulkImg)
 	}
-	err := app.Run(iris.Addr(":8080"), iris.WithOptimizations, iris.WithoutBanner, iris.WithoutStartupLog)
+	err := app.Run(iris.Addr(":8081"), iris.WithOptimizations, iris.WithoutBanner, iris.WithoutStartupLog)
 	if err != iris.ErrServerClosed {
 		panic("Shutdown with error: " + err.Error())
 	}
@@ -68,20 +98,22 @@ func ping(ctx iris.Context) {
 }
 
 func sendText(ctx iris.Context) {
-	to := strings.Replace(ctx.URLParam("to"), " ", "", -1)
-	mess := ctx.URLParam("msg")
+	to := strings.Replace(ctx.URLParamDefault("to", "1234567890"), " ", "", -1)
+	mess := ctx.URLParamDefault("msg", "testing")
 	ctx.WriteString(texting(to, mess))
 }
 
 func sendBulk(ctx iris.Context) {
 	file := ctx.URLParamDefault("file", "test.csv")
-
 	var folder string
+	m := make(map[string]string)
+
 	if runtime.GOOS == "windows" {
 		folder = `\files\`
 	} else {
 		folder = "/files/"
 	}
+
 	csvFile, err := os.Open(dir + folder + file)
 	if err != nil {
 		panic(err)
@@ -95,7 +127,6 @@ func sendBulk(ctx iris.Context) {
 	if err != nil {
 		panic(err)
 	}
-	m := make(map[string]string)
 
 	for _, each := range csvData {
 		each[0] = strings.Replace(each[0], " ", "", -1)
@@ -107,15 +138,30 @@ func sendBulk(ctx iris.Context) {
 	ctx.JSON(m)
 }
 
+func sendImage(ctx iris.Context) {
+	to := strings.Replace(ctx.URLParamDefault("to", "1234567890"), " ", "", -1)
+	mess := ctx.URLParamDefault("msg", "testing")
+	img := ctx.URLParamDefault("img", "testImg.jpg")
+	v := SendImage{
+		Receiver: to,
+		Message:  mess,
+		Image:    img,
+	}
+
+	ctx.WriteString(image(v))
+}
+
 func sendBulkImg(ctx iris.Context) {
 	file := ctx.URLParamDefault("file", "testImg.csv")
-
 	var folder string
+	m := make(map[string]string)
+
 	if runtime.GOOS == "windows" {
 		folder = `\files\`
 	} else {
 		folder = "/files/"
 	}
+
 	csvFile, err := os.Open(dir + folder + file)
 	if err != nil {
 		panic(err)
@@ -129,7 +175,6 @@ func sendBulkImg(ctx iris.Context) {
 	if err != nil {
 		panic(err)
 	}
-	m := make(map[string]string)
 
 	for _, each := range csvData {
 		if each[0] != "" {
@@ -139,44 +184,11 @@ func sendBulkImg(ctx iris.Context) {
 				Message:  each[1],
 				Image:    each[2],
 			}
-
 			m[each[0]] = image(v)
 		}
 	}
 
 	ctx.JSON(m)
-}
-
-func sendImage(ctx iris.Context) {
-	to := strings.Replace(ctx.URLParam("to"), " ", "", -1)
-	mess := ctx.URLParam("msg")
-	img := ctx.URLParam("img")
-
-	v := SendImage{
-		Receiver: to,
-		Message:  mess,
-		Image:    img,
-	}
-
-	ctx.WriteString(image(v))
-}
-
-func testText(ctx iris.Context) {
-	to := strings.Replace(ctx.URLParamDefault("to", "1234567890"), " ", "", -1)
-	mess := ctx.URLParamDefault("msg", "testing")
-	ctx.WriteString(texting(to, mess))
-}
-
-func testImage(ctx iris.Context) {
-	to := strings.Replace(ctx.URLParamDefault("to", "1234567890"), " ", "", -1)
-	mess := ctx.URLParamDefault("msg", "testing")
-	img := ctx.URLParamDefault("img", "testImg.jpg")
-	v := SendImage{
-		Receiver: to,
-		Message:  mess,
-		Image:    img,
-	}
-	ctx.WriteString(image(v))
 }
 
 func texting(to, mess string) string {
@@ -192,6 +204,7 @@ func texting(to, mess string) string {
 		panic("Error sending message: to " + to + " " + err.Error())
 		return "Error"
 	}
+
 	return "Message Sent -> " + to + " : " + msgId
 }
 
@@ -222,6 +235,7 @@ func image(v SendImage) string {
 		panic("Error sending message: to " + v.Receiver + " " + err.Error())
 		return "Error"
 	}
+
 	return "Message Sent -> " + v.Receiver + " : " + msgId
 }
 

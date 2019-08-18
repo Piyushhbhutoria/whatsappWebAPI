@@ -3,3 +3,5 @@
 whatsappAPI
 *.exe
 files/
+test/
+hosting/config.json
