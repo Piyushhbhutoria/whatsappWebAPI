@@ -68,21 +68,6 @@ var (
 	config         Config
 )
 
-func (h *waHandler) HandleError(err error) {
-	if e, ok := err.(*whatsapp.ErrConnectionFailed); ok {
-		log.Printf("Connection failed, underlying error: %v", e.Err)
-		log.Println("Waiting 30sec...")
-		<-time.After(30 * time.Second)
-		log.Println("Reconnecting...")
-		err := h.c.Restore()
-		if err != nil {
-			log.Printf("Restore failed: %v", err)
-		}
-	} else {
-		log.Printf("error occoured: %v\n", err)
-	}
-}
-
 func init() {
 	file, err := os.Open("config.json")
 	if err != nil {
@@ -198,10 +183,8 @@ func main() {
 }
 
 func (*waHandler) HandleTextMessage(message whatsapp.TextMessage) {
-	if len(message.Text) < 20 && len(message.Text) > 1 {
-		if message.Info.Timestamp > uint64(now) {
-			requestChannel <- message
-		}
+	if message.Info.Timestamp > uint64(now) && !message.Info.FromMe && len(message.Text) < 20 && len(message.Text) > 1 {
+		requestChannel <- message
 	}
 	//fmt.Println(len(message.Text))
 }
@@ -369,4 +352,19 @@ func writeSession(session whatsapp.Session) error {
 		return err
 	}
 	return nil
+}
+
+func (h *waHandler) HandleError(err error) {
+	if e, ok := err.(*whatsapp.ErrConnectionFailed); ok {
+		log.Printf("Connection failed, underlying error: %v", e.Err)
+		log.Println("Waiting 30sec...")
+		<-time.After(30 * time.Second)
+		log.Println("Reconnecting...")
+		err := h.c.Restore()
+		if err != nil {
+			log.Printf("Restore failed: %v", err)
+		}
+	} else {
+		log.Printf("error occoured: %v\n", err)
+	}
 }
