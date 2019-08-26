@@ -5,3 +5,5 @@ whatsappAPI
 files/
 test/
 hosting/config.json
+*.gob
+*.log

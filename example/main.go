@@ -6,33 +6,22 @@ import (
 	"fmt"
 	qrcodeTerminal "github.com/Baozisoftware/qrcode-terminal-go"
 	"github.com/Rhymen/go-whatsapp"
-	"github.com/getsentry/raven-go"
-	"github.com/iris-contrib/middleware/cors"
-	ravenIris "github.com/iris-contrib/middleware/raven"
-	"github.com/kataras/iris"
-	"github.com/kataras/iris/middleware/logger"
+	"github.com/getsentry/sentry-go"
+	sentrygin "github.com/getsentry/sentry-go/gin"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 )
 
-type SendImage struct {
-	Receiver string `json:"to"`
-	Message  string `json:"text"`
-	Image    string `json:"image"`
-}
-
 type SendText struct {
 	Receiver string `json:"to"`
 	Message  string `json:"text"`
-}
-
-type SendBulkImage struct {
-	List []SendImage `json:"list"`
 }
 
 type SendBulkText struct {
@@ -62,7 +51,6 @@ type Config struct {
 
 var (
 	wac, _         = whatsapp.NewConn(5 * time.Second)
-	dir, _         = filepath.Abs(filepath.Dir(os.Args[0]))
 	requestChannel chan whatsapp.TextMessage
 	now            = time.Now().Unix()
 	config         Config
@@ -79,14 +67,19 @@ func init() {
 		panic(err)
 	}
 
-	fmt.Println("for login error please delete whatsappSession.gob at this folder -> ", os.TempDir())
-	fmt.Println("running on " + string(runtime.NumCPU()) + "cores.")
+	fmt.Println("for session issue  remove whatsapp.gob from --> " + os.TempDir())
+	fmt.Println("running on " + strconv.Itoa(runtime.NumCPU()) + " cores.")
 
-	raven.SetDSN(config.Sentry)
+	if err := sentry.Init(sentry.ClientOptions{
+		Dsn: config.Sentry,
+	}); err != nil {
+		fmt.Printf("Sentry initialization failed: %v\n", err)
+	}
+
+	requestChannel = make(chan whatsapp.TextMessage)
 
 	wac.AddHandler(&waHandler{wac})
-	err = login(wac)
-	if err != nil {
+	if err = login(wac); err != nil {
 		panic("Error logging in: \n" + err.Error())
 	}
 
@@ -95,10 +88,8 @@ func init() {
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	requestChannel = make(chan whatsapp.TextMessage)
-	var (
-		temp Resp
-	)
+	var temp Resp
+
 	go func() {
 		for {
 			request, ok := <-requestChannel
@@ -112,27 +103,23 @@ func main() {
 				req.Header.Add("Content-Type", "application/json")
 				req.Header.Add("Cache-Control", "no-cache")
 				req.Header.Add("Host", "api.cai.tools.sap")
-				//req.Header.Add("Accept-Encoding", "gzip, deflate")
-				//req.Header.Add("Connection", "keep-alive")
 				res, err := http.DefaultClient.Do(req)
 				if err != nil {
-					panic(err)
+					log.Printf("error request: %v\n", err)
 				}
 				defer res.Body.Close()
-				//body, _ := ioutil.ReadAll(res.Body)
-				//fmt.Println(res)
-				//fmt.Println(string(body))
 				if res.StatusCode != 200 {
-					panic(err)
+					log.Printf("Bad request: %v\n", err)
 				}
 				err = json.NewDecoder(res.Body).Decode(&temp) // Decoding the  ES JSON response
 				if err != nil {
-					panic(err)
+					log.Printf("Error decoding body: %v\n", err)
 				}
 				if len(temp.Results.Messages) > 0 && temp.Results.Messages[0].Content != "I trigger the fallback skill because I don't understand or I don't know what I'm supposed to do..." {
 					fmt.Println(temp.Results.Messages[0].Content)
 					to := request.Info.RemoteJid[2:12]
 					mess := temp.Results.Messages[0].Content
+					log.Printf("%v --> %v\nBot --> %v", to, mess, request.Text)
 					//	fmt.Println(request.Info.RemoteJid[2:12])
 					fmt.Println(texting(to, mess))
 				}
@@ -140,82 +127,66 @@ func main() {
 		}
 	}()
 
-	app := iris.New()
-	app.Logger().SetLevel("debug")
-	requestLogger := logger.New(logger.Config{
-		// Status displays status code
-		Status: true,
-		// IP displays request's remote address
-		IP: true,
-		// Method displays the http method
-		Method: true,
-		// Path displays the request path
-		Path: true,
-		// Query appends the url query to the Path.
-		Query: true,
+	//gin.SetMode(gin.ReleaseMode)
 
-		// if !empty then its contents derives from `ctx.Values().Get("logger_message")
-		// will be added to the logs.
-		MessageContextKeys: []string{"logger_message"},
+	router := gin.New()
+	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+		return fmt.Sprintf("[%s] \"%s %s %s %d %s %s\"\n",
+			param.TimeStamp.Format(time.RFC1123),
+			param.Method,
+			param.Path,
+			param.Request.Proto,
+			param.StatusCode,
+			param.Latency,
+			param.ErrorMessage,
+		)
+	}))
+	router.Use(sentrygin.New(sentrygin.Options{}))
+	router.Use(cors.Default())
 
-		// if !empty then its contents derives from `ctx.GetHeader("User-Agent")
-		MessageHeaderKeys: []string{"User-Agent"},
-	})
-	app.Use(requestLogger)
-	app.Use(ravenIris.RecoveryHandler)
-	// using Cors
-	crs := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"}, // allows everything, use that to change the hosts.
-		AllowCredentials: true,
-	})
-	v1 := app.Party("/", crs).AllowMethods(iris.MethodOptions)
-	{
-		v1.Get("/ping", ping) // Test url
-		v1.Get("/sendText", sendText)
-		v1.Post("/sendBulk", sendBulk)
-		v1.Get("/sendImage", sendImage)
-		v1.Post("/sendBulkImg", sendBulkImg)
+	router.GET("/", helloworld)
+	router.GET("/ping", ping)
+	router.GET("/sendText", sendText)
+	router.POST("/sendBulk", sendBulk)
+
+	if err := router.Run(":8081"); err != nil {
+		log.Printf("Shutdown with error: %v\n", err)
 	}
-	err := app.Run(iris.Addr(":8081"), iris.WithOptimizations, iris.WithoutBanner, iris.WithoutStartupLog)
-	if err != iris.ErrServerClosed {
-		panic("Shutdown with error: " + err.Error())
-	}
+
 }
 
 func (*waHandler) HandleTextMessage(message whatsapp.TextMessage) {
-	if message.Info.Timestamp > uint64(now) && !message.Info.FromMe && len(message.Text) < 20 && len(message.Text) > 1 {
+	//if message.Info.Timestamp > uint64(now) && !message.Info.FromMe && len(message.Text) < 17 && len(message.Text) > 1 {
+	if message.Info.Timestamp > uint64(now) && !message.Info.FromMe && !strings.Contains(message.Text, "@g.us") && len(message.Text) < 17 && len(message.Text) > 1 {
+		fmt.Printf("%v from %v\n", message.Text, message.Info)
 		requestChannel <- message
 	}
-	//fmt.Println(len(message.Text))
 }
 
-func ping(ctx iris.Context) {
-	ctx.WriteString("pong")
+func ping(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"message": "pong",
+	})
 }
 
-func sendText(ctx iris.Context) {
-	to := strings.Replace(ctx.URLParamDefault("to", "1234567890"), " ", "", -1)
-	mess := ctx.URLParamDefault("msg", "testing")
-	ctx.WriteString(texting(to, mess))
+func helloworld(c *gin.Context) {
+	c.String(http.StatusOK, "Hello World")
 }
 
-func sendImage(ctx iris.Context) {
-	to := strings.Replace(ctx.URLParamDefault("to", "1234567890"), " ", "", -1)
-	mess := ctx.URLParamDefault("msg", "testing")
-	img := ctx.URLParamDefault("img", "testImg.jpg")
-	v := SendImage{
-		Receiver: to,
-		Message:  mess,
-		Image:    img,
-	}
-	ctx.WriteString(image(v))
+func sendText(c *gin.Context) {
+	to := strings.Replace(c.DefaultQuery("to", "1234567890"), " ", "", -1)
+	mess := c.DefaultQuery("msg", "testing")
+	c.String(http.StatusOK, texting(to, mess))
 }
 
-func sendBulk(ctx iris.Context) {
+func sendBulk(c *gin.Context) {
 	var data SendBulkText
 	m := make(map[string]string)
 
-	ctx.ReadJSON(&data)
+	if err := c.ShouldBindJSON(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	for _, each := range data.List {
 		each.Receiver = strings.Replace(each.Receiver, " ", "", -1)
@@ -223,28 +194,7 @@ func sendBulk(ctx iris.Context) {
 			m[each.Receiver] = texting(each.Receiver, each.Message)
 		}
 	}
-	ctx.JSON(m)
-}
-
-func sendBulkImg(ctx iris.Context) {
-	var data SendBulkImage
-	m := make(map[string]string)
-
-	ctx.ReadJSON(&data)
-
-	for _, each := range data.List {
-		if each.Receiver != "" {
-			each.Receiver = strings.Replace(each.Receiver, " ", "", -1)
-			v := SendImage{
-				Receiver: each.Receiver,
-				Message:  each.Message,
-				Image:    each.Image,
-			}
-
-			m[each.Receiver] = image(v)
-		}
-	}
-	ctx.JSON(m)
+	c.JSON(http.StatusOK, data)
 }
 
 func texting(to, mess string) string {
@@ -257,40 +207,10 @@ func texting(to, mess string) string {
 
 	msgId, err := wac.Send(msg)
 	if err != nil {
-		panic("Error sending message: to " + to + " " + err.Error())
+		log.Printf("Error sending message: to %v %v\n", to, err)
 		return "Error"
 	}
 	return "Message Sent -> " + to + " : " + msgId
-}
-
-func image(v SendImage) string {
-	var folder string
-	if runtime.GOOS == "windows" {
-		folder = `\files\`
-	} else {
-		folder = "/files/"
-	}
-	img, err := os.Open(dir + folder + v.Image)
-	if err != nil {
-		panic("Error reading file: " + err.Error())
-		return "Error"
-	}
-
-	msg := whatsapp.ImageMessage{
-		Info: whatsapp.MessageInfo{
-			RemoteJid: "91" + v.Receiver + "@s.whatsapp.net",
-		},
-		Type:    "image/jpeg",
-		Caption: v.Message,
-		Content: img,
-	}
-
-	msgId, err := wac.Send(msg)
-	if err != nil {
-		panic("Error sending message: to " + v.Receiver + " " + err.Error())
-		return "Error"
-	}
-	return "Message Sent -> " + v.Receiver + " : " + msgId
 }
 
 func login(wac *whatsapp.Conn) error {
@@ -304,22 +224,19 @@ func login(wac *whatsapp.Conn) error {
 		}
 	} else {
 		//no saved session -> regular login
-		qr := make(chan string)
+		qrChan := make(chan string)
 		go func() {
-			//terminal := qrcodeTerminal.New()
-			//terminal.Get(<-qr).Print()
 			obj := qrcodeTerminal.New2(qrcodeTerminal.ConsoleColors.BrightBlue, qrcodeTerminal.ConsoleColors.BrightGreen, qrcodeTerminal.QRCodeRecoveryLevels.Low)
-			obj.Get(<-qr).Print()
+			obj.Get(<-qrChan).Print()
 		}()
-		session, err = wac.Login(qr)
+		session, err = wac.Login(qrChan)
 		if err != nil {
 			return fmt.Errorf("error during login: %v\n", err)
 		}
 	}
 
 	//save session
-	err = writeSession(session)
-	if err != nil {
+	if err = writeSession(session); err != nil {
 		return fmt.Errorf("error saving session: %v\n", err)
 	}
 	return nil
@@ -327,28 +244,25 @@ func login(wac *whatsapp.Conn) error {
 
 func readSession() (whatsapp.Session, error) {
 	session := whatsapp.Session{}
-	file, err := os.Open(os.TempDir() + "/whatsappSession.gob")
+	file, err := os.Open(os.TempDir() + "/whatsapp.gob")
 	if err != nil {
 		return session, err
 	}
 	defer file.Close()
 	decoder := gob.NewDecoder(file)
-	err = decoder.Decode(&session)
-	if err != nil {
+	if err = decoder.Decode(&session); err != nil {
 		return session, err
 	}
 	return session, nil
 }
 
 func writeSession(session whatsapp.Session) error {
-	file, err := os.Create(os.TempDir() + "/whatsappSession.gob")
+	file, err := os.Create(os.TempDir() + "/whatsapp.gob")
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	encoder := gob.NewEncoder(file)
-	err = encoder.Encode(session)
-	if err != nil {
+	if err = gob.NewEncoder(file).Encode(session); err != nil {
 		return err
 	}
 	return nil
@@ -356,12 +270,11 @@ func writeSession(session whatsapp.Session) error {
 
 func (h *waHandler) HandleError(err error) {
 	if e, ok := err.(*whatsapp.ErrConnectionFailed); ok {
-		log.Printf("Connection failed, underlying error: %v", e.Err)
+		log.Printf("Connection failed, underlying error: %v/n", e.Err)
 		log.Println("Waiting 30sec...")
 		<-time.After(30 * time.Second)
 		log.Println("Reconnecting...")
-		err := h.c.Restore()
-		if err != nil {
+		if err := h.c.Restore(); err != nil {
 			log.Printf("Restore failed: %v", err)
 		}
 	} else {

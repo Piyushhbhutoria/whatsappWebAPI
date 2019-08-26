@@ -1,15 +1,16 @@
 package main
 
 import (
+	"bufio"
 	"encoding/csv"
 	"encoding/gob"
 	"fmt"
 	qrcodeTerminal "github.com/Baozisoftware/qrcode-terminal-go"
 	"github.com/Rhymen/go-whatsapp"
-	"github.com/iris-contrib/middleware/cors"
-	"github.com/kataras/iris"
-	"github.com/kataras/iris/middleware/logger"
-	"github.com/kataras/iris/middleware/recover"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -21,13 +22,6 @@ type SendImage struct {
 	Receiver string `json:"to"`
 	Message  string `json:"text"`
 	Image    string `json:"image"`
-}
-
-type Results struct {
-	Messages []Messages `json:"messages"`
-}
-type Messages struct {
-	Content string `json:"content"`
 }
 
 var (
@@ -51,60 +45,44 @@ func init() {
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	app := iris.New()
-	app.Logger().SetLevel("debug")
-	requestLogger := logger.New(logger.Config{
-		// Status displays status code
-		Status: true,
-		// IP displays request's remote address
-		IP: true,
-		// Method displays the http method
-		Method: true,
-		// Path displays the request path
-		Path: true,
-		// Query appends the url query to the Path.
-		Query: true,
+	router := gin.New()
+	router.Use(gin.Recovery())
+	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+		return fmt.Sprintf("[%s] \"%s %s %s %d %s %s\"\n",
+			param.TimeStamp.Format(time.RFC1123),
+			param.Method,
+			param.Path,
+			param.Request.Proto,
+			param.StatusCode,
+			param.Latency,
+			param.ErrorMessage,
+		)
+	}))
+	router.Use(cors.Default())
 
-		// if !empty then its contents derives from `ctx.Values().Get("logger_message")
-		// will be added to the logs.
-		MessageContextKeys: []string{"logger_message"},
+	router.GET("/ping", ping)
+	router.GET("/sendText", sendText)
+	router.POST("/sendBulk", sendBulk)
+	router.GET("/sendImage", sendImage)
+	router.POST("/sendBulkImg", sendBulkImg)
 
-		// if !empty then its contents derives from `ctx.GetHeader("User-Agent")
-		MessageHeaderKeys: []string{"User-Agent"},
-	})
-	app.Use(requestLogger)
-	app.Use(recover.New())
-	// using Cors
-	crs := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"}, // allows everything, use that to change the hosts.
-		AllowCredentials: true,
-	})
-	v1 := app.Party("/", crs).AllowMethods(iris.MethodOptions)
-	{
-		v1.Get("/ping", ping) // Test url
-		v1.Get("/sendText", sendText)
-		v1.Get("/sendBulk", sendBulk)
-		v1.Get("/sendImage", sendImage)
-		v1.Get("/sendBulkImg", sendBulkImg)
-	}
-	err := app.Run(iris.Addr(":8081"), iris.WithOptimizations, iris.WithoutBanner, iris.WithoutStartupLog)
-	if err != iris.ErrServerClosed {
-		panic("Shutdown with error: " + err.Error())
+	if err := router.Run(":8081"); err != nil {
+		log.Printf("Shutdown with error: %v\n", err)
 	}
 }
 
-func ping(ctx iris.Context) {
-	ctx.WriteString("pong")
+func ping(c *gin.Context) {
+	c.String(http.StatusOK, "Hello World")
 }
 
-func sendText(ctx iris.Context) {
-	to := strings.Replace(ctx.URLParamDefault("to", "1234567890"), " ", "", -1)
-	mess := ctx.URLParamDefault("msg", "testing")
-	ctx.WriteString(texting(to, mess))
+func sendText(c *gin.Context) {
+	to := strings.Replace(c.DefaultQuery("to", "1234567890"), " ", "", -1)
+	mess := c.DefaultQuery("msg", "testing")
+	c.String(http.StatusOK, texting(to, mess))
 }
 
-func sendBulk(ctx iris.Context) {
-	file := ctx.URLParamDefault("file", "test.csv")
+func sendBulk(c *gin.Context) {
+	file := c.DefaultQuery("file", "test.csv")
 	var folder string
 	m := make(map[string]string)
 
@@ -135,24 +113,24 @@ func sendBulk(ctx iris.Context) {
 		}
 	}
 
-	ctx.JSON(m)
+	c.JSON(http.StatusOK, m)
 }
 
-func sendImage(ctx iris.Context) {
-	to := strings.Replace(ctx.URLParamDefault("to", "1234567890"), " ", "", -1)
-	mess := ctx.URLParamDefault("msg", "testing")
-	img := ctx.URLParamDefault("img", "testImg.jpg")
+func sendImage(c *gin.Context) {
+	to := strings.Replace(c.DefaultQuery("to", "1234567890"), " ", "", -1)
+	mess := c.DefaultQuery("msg", "testing")
+	img := c.DefaultQuery("img", "testImg.jpg")
 	v := SendImage{
 		Receiver: to,
 		Message:  mess,
 		Image:    img,
 	}
 
-	ctx.WriteString(image(v))
+	c.String(http.StatusOK, image(v))
 }
 
-func sendBulkImg(ctx iris.Context) {
-	file := ctx.URLParamDefault("file", "testImg.csv")
+func sendBulkImg(c *gin.Context) {
+	file := c.DefaultQuery("file", "testImg.csv")
 	var folder string
 	m := make(map[string]string)
 
@@ -188,7 +166,7 @@ func sendBulkImg(ctx iris.Context) {
 		}
 	}
 
-	ctx.JSON(m)
+	c.JSON(http.StatusOK, m)
 }
 
 func texting(to, mess string) string {
@@ -240,8 +218,13 @@ func image(v SendImage) string {
 }
 
 func login(wac *whatsapp.Conn) error {
+	fmt.Print("Enter your number: ")
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	text := scanner.Text()
+	fmt.Println("Logging in -> " + text)
 	//load saved session
-	session, err := readSession()
+	session, err := readSession(text)
 	if err == nil {
 		//restore session
 		session, err = wac.RestoreWithSession(session)
@@ -264,16 +247,16 @@ func login(wac *whatsapp.Conn) error {
 	}
 
 	//save session
-	err = writeSession(session)
+	err = writeSession(session, text)
 	if err != nil {
 		return fmt.Errorf("error saving session: %v\n", err)
 	}
 	return nil
 }
 
-func readSession() (whatsapp.Session, error) {
+func readSession(s string) (whatsapp.Session, error) {
 	session := whatsapp.Session{}
-	file, err := os.Open(os.TempDir() + "/whatsappSession.gob")
+	file, err := os.Open(s + ".gob")
 	if err != nil {
 		return session, err
 	}
@@ -286,8 +269,8 @@ func readSession() (whatsapp.Session, error) {
 	return session, nil
 }
 
-func writeSession(session whatsapp.Session) error {
-	file, err := os.Create(os.TempDir() + "/whatsappSession.gob")
+func writeSession(session whatsapp.Session, s string) error {
+	file, err := os.Create(s + ".gob")
 	if err != nil {
 		return err
 	}
