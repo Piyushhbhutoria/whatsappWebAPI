@@ -37,12 +37,10 @@ Send Image --> localhost:8081/sendImage?to=1234567890&msg=hello&img=testImg.jpg
 Send bulk text --> localhost:8081/sendBulk?file=test.csv  
 Send bulk image --> localhost:8081/sendBulkImg?file=testImg.csv  
 
-Link to import Postman requests --> https://www.getpostman.com/collections/caee3c3c8a3fc04304d0
-
 ### Demo
 
 Test Text --> [localhost:8081/sendText](localhost:8081/sendText)  
-Test Image --> [localhost:8081/sendText](localhost:8081/sendText) 
+Test Image --> [localhost:8081/sendImage](localhost:8081/sendImage) 
 
 Demo bulk file examples stored in [files](/files) folder
 

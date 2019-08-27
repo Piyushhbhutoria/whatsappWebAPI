@@ -27,10 +27,16 @@ type SendImage struct {
 var (
 	wac, _ = whatsapp.NewConn(5 * time.Second)
 	dir, _ = filepath.Abs(filepath.Dir(os.Args[0]))
+	folder string
 )
 
 func init() {
-	fmt.Println("for login error please delete whatsappSession.gob at this folder -> ", os.TempDir())
+	if runtime.GOOS == "windows" {
+		folder = `\files\`
+	} else {
+		folder = "/files/"
+	}
+
 	fmt.Println("running on " + string(runtime.NumCPU()) + "cores.")
 
 	err := login(wac)
@@ -62,9 +68,9 @@ func main() {
 
 	router.GET("/ping", ping)
 	router.GET("/sendText", sendText)
-	router.POST("/sendBulk", sendBulk)
+	router.GET("/sendBulk", sendBulk)
 	router.GET("/sendImage", sendImage)
-	router.POST("/sendBulkImg", sendBulkImg)
+	router.GET("/sendBulkImg", sendBulkImg)
 
 	if err := router.Run(":8081"); err != nil {
 		log.Printf("Shutdown with error: %v\n", err)
@@ -134,12 +140,6 @@ func sendBulkImg(c *gin.Context) {
 	var folder string
 	m := make(map[string]string)
 
-	if runtime.GOOS == "windows" {
-		folder = `\files\`
-	} else {
-		folder = "/files/"
-	}
-
 	csvFile, err := os.Open(dir + folder + file)
 	if err != nil {
 		panic(err)
@@ -188,11 +188,7 @@ func texting(to, mess string) string {
 
 func image(v SendImage) string {
 	var folder string
-	if runtime.GOOS == "windows" {
-		folder = `\files\`
-	} else {
-		folder = "/files/"
-	}
+	
 	img, err := os.Open(dir + folder + v.Image)
 	if err != nil {
 		panic("Error reading file: " + err.Error())
@@ -256,7 +252,7 @@ func login(wac *whatsapp.Conn) error {
 
 func readSession(s string) (whatsapp.Session, error) {
 	session := whatsapp.Session{}
-	file, err := os.Open(s + ".gob")
+	file, err := os.Open(dir + folder + s + ".gob")
 	if err != nil {
 		return session, err
 	}
@@ -270,7 +266,7 @@ func readSession(s string) (whatsapp.Session, error) {
 }
 
 func writeSession(session whatsapp.Session, s string) error {
-	file, err := os.Create(s + ".gob")
+	file, err := os.Create(dir + folder + s + ".gob")
 	if err != nil {
 		return err
 	}
