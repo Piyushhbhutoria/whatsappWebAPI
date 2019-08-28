@@ -5,10 +5,6 @@ import (
 	"encoding/csv"
 	"encoding/gob"
 	"fmt"
-	qrcodeTerminal "github.com/Baozisoftware/qrcode-terminal-go"
-	"github.com/Rhymen/go-whatsapp"
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"os"
@@ -16,7 +12,17 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	qrcodeTerminal "github.com/Baozisoftware/qrcode-terminal-go"
+	"github.com/Rhymen/go-whatsapp"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
+
+type SendText struct {
+	Receiver string `json:"to"`
+	Message  string `json:"text"`
+}
 
 type SendImage struct {
 	Receiver string `json:"to"`
@@ -25,9 +31,11 @@ type SendImage struct {
 }
 
 var (
-	wac, _ = whatsapp.NewConn(5 * time.Second)
-	dir, _ = filepath.Abs(filepath.Dir(os.Args[0]))
-	folder string
+	wac, _       = whatsapp.NewConn(5 * time.Second)
+	dir, _       = filepath.Abs(filepath.Dir(os.Args[0]))
+	folder       string
+	textChannel  chan SendText
+	imageChannel chan SendImage
 )
 
 func init() {
@@ -38,6 +46,9 @@ func init() {
 	}
 
 	fmt.Println("running on " + string(runtime.NumCPU()) + "cores.")
+
+	textChannel = make(chan SendText)
+	imageChannel = make(chan SendImage)
 
 	err := login(wac)
 	if err != nil {
@@ -50,6 +61,24 @@ func init() {
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	go func() {
+		for {
+			request, ok := <-textChannel
+			if ok {
+				log.Println(texting(request))
+			}
+		}
+	}()
+
+	go func() {
+		for {
+			request, ok := <-imageChannel
+			if ok {
+				log.Println(image(request))
+			}
+		}
+	}()
 
 	router := gin.New()
 	router.Use(gin.Recovery())
@@ -78,19 +107,22 @@ func main() {
 }
 
 func ping(c *gin.Context) {
-	c.String(http.StatusOK, "Hello World")
+	c.String(http.StatusOK, "Pong")
 }
 
 func sendText(c *gin.Context) {
 	to := strings.Replace(c.DefaultQuery("to", "1234567890"), " ", "", -1)
 	mess := c.DefaultQuery("msg", "testing")
-	c.String(http.StatusOK, texting(to, mess))
+	v := SendText{
+		Receiver: to,
+		Message:  mess,
+	}
+	c.String(http.StatusOK, texting(v))
 }
 
 func sendBulk(c *gin.Context) {
 	file := c.DefaultQuery("file", "test.csv")
 	var folder string
-	m := make(map[string]string)
 
 	if runtime.GOOS == "windows" {
 		folder = `\files\`
@@ -115,11 +147,15 @@ func sendBulk(c *gin.Context) {
 	for _, each := range csvData {
 		each[0] = strings.Replace(each[0], " ", "", -1)
 		if each[0] != "" {
-			m[each[0]] = texting(each[0], each[1])
+			v := SendText{
+				Receiver: each[0],
+				Message:  each[1],
+			}
+			textChannel <- v
 		}
 	}
 
-	c.JSON(http.StatusOK, m)
+	c.JSON(http.StatusOK, "Done")
 }
 
 func sendImage(c *gin.Context) {
@@ -138,7 +174,6 @@ func sendImage(c *gin.Context) {
 func sendBulkImg(c *gin.Context) {
 	file := c.DefaultQuery("file", "testImg.csv")
 	var folder string
-	m := make(map[string]string)
 
 	csvFile, err := os.Open(dir + folder + file)
 	if err != nil {
@@ -162,36 +197,36 @@ func sendBulkImg(c *gin.Context) {
 				Message:  each[1],
 				Image:    each[2],
 			}
-			m[each[0]] = image(v)
+			imageChannel <- v
 		}
 	}
 
-	c.JSON(http.StatusOK, m)
+	c.JSON(http.StatusOK, "Done")
 }
 
-func texting(to, mess string) string {
+func texting(v SendText) string {
 	msg := whatsapp.TextMessage{
 		Info: whatsapp.MessageInfo{
-			RemoteJid: "91" + to + "@s.whatsapp.net",
+			RemoteJid: "91" + v.Receiver + "@s.whatsapp.net",
 		},
-		Text: mess,
+		Text: v.Message,
 	}
 
 	msgId, err := wac.Send(msg)
 	if err != nil {
-		panic("Error sending message: to " + to + " " + err.Error())
+		log.Printf("Error sending message: to %v --> %v\n", v.Receiver, err)
 		return "Error"
 	}
 
-	return "Message Sent -> " + to + " : " + msgId
+	return "Message Sent -> " + v.Receiver + " : " + msgId
 }
 
 func image(v SendImage) string {
 	var folder string
-	
+
 	img, err := os.Open(dir + folder + v.Image)
 	if err != nil {
-		panic("Error reading file: " + err.Error())
+		log.Printf("Error reading file: %v\n", err)
 		return "Error"
 	}
 
@@ -206,7 +241,7 @@ func image(v SendImage) string {
 
 	msgId, err := wac.Send(msg)
 	if err != nil {
-		panic("Error sending message: to " + v.Receiver + " " + err.Error())
+		log.Printf("Error sending message: to %v --> %v\n", v.Receiver, err)
 		return "Error"
 	}
 

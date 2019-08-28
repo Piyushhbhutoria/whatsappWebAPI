@@ -76,7 +76,7 @@ func init() {
 		fmt.Printf("Sentry initialization failed: %v\n", err)
 	}
 
-	requestChannel = make(chan whatsapp.TextMessage)
+	requestChannel = make(chan whatsapp.TextMessage,runtime.NumCPU())
 
 	wac.AddHandler(&waHandler{wac})
 	if err = login(wac); err != nil {
@@ -207,7 +207,7 @@ func (*waHandler) HandleTextMessage(message whatsapp.TextMessage) {
 
 		msgId, err := wac.Send(msg)
 		if err != nil {
-			log.Printf("Error sending message: to %v %v\n", to, err)
+			log.Printf("Error sending message: to %v --> %v\n", to, err)
 			return "Error"
 		}
 		return "Message Sent -> " + to + " : " + msgId
