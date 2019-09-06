@@ -37,13 +37,19 @@ Send Image --> localhost:8081/sendImage?to=1234567890&msg=hello&img=testImg.jpg
 Send bulk text --> localhost:8081/sendBulk?file=test.csv  
 Send bulk image --> localhost:8081/sendBulkImg?file=testImg.csv  
 
-### Demo
+## Demo
 
 Test Text --> [localhost:8081/sendText](localhost:8081/sendText)  
 Test Image --> [localhost:8081/sendImage](localhost:8081/sendImage) 
 
 Demo bulk file examples stored in [files](/files) folder
 
-#### Extra
+## Extra
 
 Sample with Sentry and bot integrated in hosting folder
+
+## License
+
+![GitHub](https://img.shields.io/github/license/Piyushhbhutoria/whatsappWebAPI?style=for-the-badge)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/Piyushhbhutoria/whatsappWebAPI?style=for-the-badge)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Piyushhbhutoria/whatsappWebAPI?style=for-the-badge)
