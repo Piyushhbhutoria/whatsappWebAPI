@@ -3,11 +3,6 @@
 This project is made with the help of [Rhymen/go-whatsapp - WhatsApp Web API](https://github.com/Rhymen/go-whatsapp).
 Works only for numbers in India for now.
 
-## Requirements
-
-1. Golang setup on your local
-2. Web Browser/Postman
-
 ## Setup
 
 1. Download the latest binary release.  
@@ -16,12 +11,15 @@ Works only for numbers in India for now.
 
 or create your binary locally as below
 
+Note : (Requirements) Golang setup on your local 
+
 1. Download the repo
-2. run 
+2. run commands
 ```shell
 go get .
-go run main.go
-````
+go build main.go
+````  
+3. Run the binary
 
 ## Steps to use - 
 
@@ -31,22 +29,19 @@ go run main.go
 
 ## Usage
 
-Hit the following links to send message on whatsapp  
-Send Text --> localhost:8081/sendText?to=1234567890&msg=hello  
-Send Image --> localhost:8081/sendImage?to=1234567890&msg=hello&img=testImg.jpg  
-Send bulk text --> localhost:8081/sendBulk?file=test.csv  
-Send bulk image --> localhost:8081/sendBulkImg?file=testImg.csv  
-
-## Demo
-
-Test Text --> [localhost:8081/sendText](localhost:8081/sendText)  
-Test Image --> [localhost:8081/sendImage](localhost:8081/sendImage) 
+Press the following number to send message on whatsapp  
+Test --> 0  
+Send Text --> 1  
+Send Image --> 2  
+Send bulk text --> 3  
+Send bulk image --> 4  
+Exit --> 5  
 
 Demo bulk file examples stored in [files](/files) folder
 
 ## Extra
 
-Sample with Sentry and bot integrated in hosting folder
+Sample with API hosting, Sentry and bot integrated in hosting folder
 
 ## License
 

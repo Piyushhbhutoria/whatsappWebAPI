@@ -6,17 +6,15 @@ import (
 	"encoding/gob"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
 	qrcodeTerminal "github.com/Baozisoftware/qrcode-terminal-go"
 	"github.com/Rhymen/go-whatsapp"
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
 )
 
 type SendText struct {
@@ -39,13 +37,15 @@ var (
 )
 
 func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	if runtime.GOOS == "windows" {
 		folder = `\files\`
 	} else {
 		folder = "/files/"
 	}
 
-	fmt.Println("running on " + string(runtime.NumCPU()) + "cores.")
+	fmt.Println("running on " + strconv.Itoa(runtime.NumCPU()) + " cores.")
 
 	textChannel = make(chan SendText)
 	imageChannel = make(chan SendImage)
@@ -60,7 +60,6 @@ func init() {
 }
 
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	go func() {
 		for {
@@ -80,56 +79,56 @@ func main() {
 		}
 	}()
 
-	router := gin.New()
-	router.Use(gin.Recovery())
-	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
-		return fmt.Sprintf("[%s] \"%s %s %s %d %s %s\"\n",
-			param.TimeStamp.Format(time.RFC1123),
-			param.Method,
-			param.Path,
-			param.Request.Proto,
-			param.StatusCode,
-			param.Latency,
-			param.ErrorMessage,
-		)
-	}))
-	router.Use(cors.Default())
+	for {
+		fmt.Println("Press 0. Test")
+		fmt.Println("Press 1. Send Text")
+		fmt.Println("Press 2. Send Image")
+		fmt.Println("Press 3. Send Bulk Text")
+		fmt.Println("Press 4. Send Bulk Image")
+		fmt.Println("Press 5. Exit")
 
-	router.GET("/ping", ping)
-	router.GET("/sendText", sendText)
-	router.GET("/sendBulk", sendBulk)
-	router.GET("/sendImage", sendImage)
-	router.GET("/sendBulkImg", sendBulkImg)
-
-	if err := router.Run(":8081"); err != nil {
-		log.Printf("Shutdown with error: %v\n", err)
-	}
-}
-
-func ping(c *gin.Context) {
-	c.String(http.StatusOK, "Pong")
-}
-
-func sendText(c *gin.Context) {
-	to := strings.Replace(c.DefaultQuery("to", "1234567890"), " ", "", -1)
-	mess := c.DefaultQuery("msg", "testing")
-	v := SendText{
-		Receiver: to,
-		Message:  mess,
-	}
-	c.String(http.StatusOK, texting(v))
-}
-
-func sendBulk(c *gin.Context) {
-	file := c.DefaultQuery("file", "test.csv")
-	var folder string
-
-	if runtime.GOOS == "windows" {
-		folder = `\files\`
-	} else {
-		folder = "/files/"
+		var s int
+		fmt.Scanln(&s)
+		if s == 0 {
+			v := SendText{
+				Receiver: "1234567890",
+				Message:  "testing",
+			}
+			log.Println(texting(v))
+		} else if s == 1 {
+			var v SendText
+			fmt.Print("Enter the number: ")
+			fmt.Scanln(&v.Receiver)
+			fmt.Print("Enter the message: ")
+			fmt.Scanln(&v.Message)
+			log.Println(texting(v))
+		} else if s == 2 {
+			var v SendImage
+			fmt.Print("Enter the number: ")
+			fmt.Scanln(&v.Receiver)
+			fmt.Print("Enter the message: ")
+			fmt.Scanln(&v.Message)
+			fmt.Print("Enter the image name: ")
+			fmt.Scanln(&v.Image)
+			log.Println(image(v))
+		} else if s == 3 {
+			var file string
+			fmt.Print("Enter the csv name: ")
+			fmt.Scanln(&file)
+			log.Println(sendBulk(file + ".csv"))
+		} else if s == 4 {
+			var file string
+			fmt.Print("Enter the csv name: ")
+			fmt.Scanln(&file)
+			log.Println(sendBulkImg(file + ".csv"))
+		} else if s == 5 {
+			break
+		}
 	}
 
+}
+
+func sendBulk(file string) string {
 	csvFile, err := os.Open(dir + folder + file)
 	if err != nil {
 		panic(err)
@@ -155,26 +154,10 @@ func sendBulk(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, "Done")
+	return "Done"
 }
 
-func sendImage(c *gin.Context) {
-	to := strings.Replace(c.DefaultQuery("to", "1234567890"), " ", "", -1)
-	mess := c.DefaultQuery("msg", "testing")
-	img := c.DefaultQuery("img", "testImg.jpg")
-	v := SendImage{
-		Receiver: to,
-		Message:  mess,
-		Image:    img,
-	}
-
-	c.String(http.StatusOK, image(v))
-}
-
-func sendBulkImg(c *gin.Context) {
-	file := c.DefaultQuery("file", "testImg.csv")
-	var folder string
-
+func sendBulkImg(file string) string {
 	csvFile, err := os.Open(dir + folder + file)
 	if err != nil {
 		panic(err)
@@ -201,7 +184,7 @@ func sendBulkImg(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, "Done")
+	return "Done"
 }
 
 func texting(v SendText) string {
