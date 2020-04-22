@@ -51,7 +51,7 @@ type Config struct {
 }
 
 var (
-	wac, _         = whatsapp.NewConn(5 * time.Second)
+	wac, _         = whatsapp.NewConn(20 * time.Second)
 	requestChannel chan whatsapp.TextMessage
 	now            = time.Now().Unix()
 	config         Config
@@ -79,6 +79,7 @@ func init() {
 
 	requestChannel = make(chan whatsapp.TextMessage, runtime.NumCPU())
 
+	wac.SetClientVersion(0, 4, 1307)
 	wac.AddHandler(&waHandler{wac})
 	if err = login(wac); err != nil {
 		panic("Error logging in: \n" + err.Error())

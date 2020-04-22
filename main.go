@@ -29,7 +29,7 @@ type SendImage struct {
 }
 
 var (
-	wac, _       = whatsapp.NewConn(5 * time.Second)
+	wac, _       = whatsapp.NewConn(20 * time.Second)
 	dir, _       = filepath.Abs(filepath.Dir(os.Args[0]))
 	folder       string
 	textChannel  chan SendText
@@ -49,11 +49,11 @@ func init() {
 
 	textChannel = make(chan SendText)
 	imageChannel = make(chan SendImage)
+	wac.SetClientVersion(0, 4, 1307)
 
 	err := login(wac)
 	if err != nil {
 		panic("Error logging in: \n" + err.Error())
-		return
 	}
 
 	<-time.After(3 * time.Second)
