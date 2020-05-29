@@ -6,4 +6,3 @@ testing/*
 *.csv
 *.jpg
 *.log
-build/

@@ -7,7 +7,7 @@ import (
 	"github.com/Rhymen/go-whatsapp"
 )
 
-func image(v SendImage) string {
+func image(v sendImage) string {
 	var folder string
 
 	img, err := os.Open(dir + folder + v.Image)
@@ -25,11 +25,11 @@ func image(v SendImage) string {
 		Content: img,
 	}
 
-	msgId, err := wac.Send(msg)
+	msgID, err := wac.Send(msg)
 	if err != nil {
 		log.Printf("Error sending message: to %v --> %v\n", v.Receiver, err)
 		return "Error"
 	}
 
-	return "Message Sent -> " + v.Receiver + " : " + msgId
+	return "Message Sent -> " + v.Receiver + " : " + msgID
 }

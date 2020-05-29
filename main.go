@@ -15,8 +15,8 @@ import (
 var (
 	wac, _       = whatsapp.NewConn(20 * time.Second)
 	dir, _       = filepath.Abs(filepath.Dir(os.Args[0]))
-	textChannel  chan SendText
-	imageChannel chan SendImage
+	textChannel  chan sendText
+	imageChannel chan sendImage
 )
 
 func init() {
@@ -24,8 +24,8 @@ func init() {
 
 	fmt.Println("running on " + strconv.Itoa(runtime.NumCPU()) + " cores.")
 
-	textChannel = make(chan SendText)
-	imageChannel = make(chan SendImage)
+	textChannel = make(chan sendText)
+	imageChannel = make(chan sendImage)
 	wac.SetClientVersion(0, 4, 1307)
 
 	err := login(wac)
@@ -66,20 +66,20 @@ func main() {
 		var s int
 		fmt.Scanln(&s)
 		if s == 0 {
-			v := SendText{
+			v := sendText{
 				Receiver: "1234567890",
 				Message:  "testing",
 			}
 			log.Println(texting(v))
 		} else if s == 1 {
-			var v SendText
+			var v sendText
 			fmt.Print("Enter the reciever number: ")
 			fmt.Scanln(&v.Receiver)
 			fmt.Print("Enter the message to be sent: ")
 			fmt.Scanln(&v.Message)
 			log.Println(texting(v))
 		} else if s == 2 {
-			var v SendImage
+			var v sendImage
 			fmt.Print("Enter the reciever number: ")
 			fmt.Scanln(&v.Receiver)
 			fmt.Print("Enter the message to be sent: ")

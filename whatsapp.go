@@ -22,7 +22,7 @@ func login(wac *whatsapp.Conn) error {
 		//restore session
 		session, err = wac.RestoreWithSession(session)
 		if err != nil {
-			return fmt.Errorf("restoring failed: %v\n", err)
+			return fmt.Errorf("restoring failed: %v", err)
 		}
 	} else {
 		//no saved session -> regular login
@@ -35,14 +35,14 @@ func login(wac *whatsapp.Conn) error {
 		}()
 		session, err = wac.Login(qr)
 		if err != nil {
-			return fmt.Errorf("error during login: %v\n", err)
+			return fmt.Errorf("error during login: %v", err)
 		}
 	}
 
 	//save session
 	err = writeSession(session, text)
 	if err != nil {
-		return fmt.Errorf("error saving session: %v\n", err)
+		return fmt.Errorf("error saving session: %v", err)
 	}
 	return nil
 }

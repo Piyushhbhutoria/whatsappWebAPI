@@ -6,7 +6,7 @@ import (
 	"github.com/Rhymen/go-whatsapp"
 )
 
-func texting(v SendText) string {
+func texting(v sendText) string {
 	msg := whatsapp.TextMessage{
 		Info: whatsapp.MessageInfo{
 			RemoteJid: "91" + v.Receiver + "@s.whatsapp.net",
@@ -14,11 +14,11 @@ func texting(v SendText) string {
 		Text: v.Message,
 	}
 
-	msgId, err := wac.Send(msg)
+	msgID, err := wac.Send(msg)
 	if err != nil {
 		log.Printf("Error sending message: to %v --> %v\n", v.Receiver, err)
 		return "Error"
 	}
 
-	return "Message Sent -> " + v.Receiver + " : " + msgId
+	return "Message Sent -> " + v.Receiver + " : " + msgID
 }

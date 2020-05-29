@@ -24,7 +24,7 @@ func sendBulk(file string) string {
 	for _, each := range csvData {
 		each[0] = strings.Replace(each[0], " ", "", -1)
 		if each[0] != "" {
-			v := SendText{
+			v := sendText{
 				Receiver: each[0],
 				Message:  each[1],
 			}
@@ -53,7 +53,7 @@ func sendBulkImg(file string) string {
 	for _, each := range csvData {
 		if each[0] != "" {
 			each[0] = strings.Replace(each[0], " ", "", -1)
-			v := SendImage{
+			v := sendImage{
 				Receiver: each[0],
 				Message:  each[1],
 				Image:    each[2],
