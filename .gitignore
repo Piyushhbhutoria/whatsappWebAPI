@@ -1,8 +1,7 @@
 .idea/
 .DS_Store
-files/
-testing/
-example/config.json
+files/*
+testing/*
 *.gob
 *.csv
 *.jpg
