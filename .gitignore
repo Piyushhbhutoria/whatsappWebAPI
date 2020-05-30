@@ -1,10 +1,8 @@
 .idea/
 .DS_Store
-whatsappAPI
-*.exe
-files/
-test/
-hosting/config.json
+files/*
+testing/*
 *.gob
+*.csv
+*.jpg
 *.log
-main
