@@ -26,7 +26,7 @@ func init() {
 
 	textChannel = make(chan sendText)
 	imageChannel = make(chan sendImage)
-	wac.SetClientVersion(0, 4, 1307)
+	wac.SetClientVersion(2, 2021, 4)
 
 	err := login(wac)
 	if err != nil {
