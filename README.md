@@ -11,6 +11,7 @@ Works only for numbers in India for now.
 ## Setup
 
 1. Download the latest binary release.
+
 2. run on your system.
 
 or create your binary locally as below
@@ -18,6 +19,7 @@ or create your binary locally as below
 Note : (Requirements) Golang setup on your local
 
 1. Download the repo
+
 2. run commands below
 
 ```go
@@ -30,6 +32,7 @@ go build .
 ## Steps to use -
 
 1. Scan the QR code with whatsapp web
+
 2. Put your lists for bulk message and pictures to send in same folder
 
 ## Usage
