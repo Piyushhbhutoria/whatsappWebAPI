@@ -1,4 +1,4 @@
-name: Go Lint & Build
+name: Go-Build
 on:
   push:
     branches:
@@ -19,9 +19,5 @@ jobs:
         with:
           go-version: 1.14
       - run: go mod download
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v1
-        with:
-          version: v1.26
       - name: Build
         run: go build -v .
