@@ -1,5 +1,6 @@
 github.com/Baozisoftware/qrcode-terminal-go v0.0.0-20170407111555-c0650d8dff0f h1:2dk3eOnYllh+wUOuDhOoC2vUVoJF/5z478ryJ+wzEII=
 github.com/Baozisoftware/qrcode-terminal-go v0.0.0-20170407111555-c0650d8dff0f/go.mod h1:4a58ifQTEe2uwwsaqbh3i2un5/CBPg+At/qHpt18Tmk=
+github.com/Piyushhbhutoria/whatsappWebAPI v1.1.1 h1:YW4vxGMUOCvgms5abSGbm8wPGZbpi9IqzbnbZc+hEmE=
 github.com/Rhymen/go-whatsapp v0.0.0/go.mod h1:rdQr95g2C1xcOfM7QGOhza58HeI3I+tZ/bbluv7VazA=
 github.com/Rhymen/go-whatsapp v0.1.0 h1:XTXhFIQ/fx9jKObUnUX2Q+nh58EyeHNhX7DniE8xeuA=
 github.com/Rhymen/go-whatsapp v0.1.0/go.mod h1:xJSy+okeRjKkQEH/lEYrnekXB3PG33fqL0I6ncAkV50=

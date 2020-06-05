@@ -38,21 +38,21 @@ func init() {
 
 func main() {
 	go func() {
-		for {
-			request, ok := <-textChannel
-			if ok {
-				log.Println(texting(request))
-			}
+	for {
+		request, ok := <-textChannel
+		if ok {
+			log.Println(texting(request))
 		}
+	}
 	}()
 
 	go func() {
-		for {
-			request, ok := <-imageChannel
-			if ok {
-				log.Println(image(request))
-			}
+	for {
+		request, ok := <-imageChannel
+		if ok {
+			log.Println(image(request))
 		}
+	}
 	}()
 
 	for {
@@ -66,11 +66,11 @@ func main() {
 		var s int
 		fmt.Scanln(&s)
 		if s == 0 {
-			v := sendText{
-				Receiver: "1234567890",
-				Message:  "testing",
-			}
-			log.Println(texting(v))
+	v := sendText{
+		Receiver: "1234567890",
+		Message:  "testing",
+	}
+	log.Println(texting(v))
 		} else if s == 1 {
 			var v sendText
 			fmt.Print("Enter the reciever number: ")
