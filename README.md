@@ -4,6 +4,8 @@
 ![GitHub](https://img.shields.io/github/license/Piyushhbhutoria/whatsappWebAPI)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/Piyushhbhutoria/whatsappWebAPI)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Piyushhbhutoria/whatsappWebAPI)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Piyushhbhutoria/whatsappWebAPI)](https://goreportcard.com/report/github.com/Piyushhbhutoria/whatsappWebAPI)
+[![Sourcegraph](https://sourcegraph.com/github.com/Piyushhbhutoria/whatsappWebAPI/-/badge.svg)](https://sourcegraph.com/github.com/Piyushhbhutoria/whatsappWebAPI?badge)
 
 This project is made with the help of [Rhymen/go-whatsapp - WhatsApp Web API](https://github.com/Rhymen/go-whatsapp).
 Works only for numbers in India for now.
