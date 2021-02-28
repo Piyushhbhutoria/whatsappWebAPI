@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/csv"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 func sendBulk(file string) string {
-	csvFile, err := os.Open(dir + file)
+	csvFile, err := os.Open(filepath.Join(dir, file))
 	if err != nil {
 		panic(err)
 	}
@@ -36,7 +37,7 @@ func sendBulk(file string) string {
 }
 
 func sendBulkImg(file string) string {
-	csvFile, err := os.Open(dir + file)
+	csvFile, err := os.Open(filepath.Join(dir, file))
 	if err != nil {
 		panic(err)
 	}
