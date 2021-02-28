@@ -6,6 +6,7 @@
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Piyushhbhutoria/whatsappWebAPI)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Piyushhbhutoria/whatsappWebAPI)](https://goreportcard.com/report/github.com/Piyushhbhutoria/whatsappWebAPI)
 [![Sourcegraph](https://sourcegraph.com/github.com/Piyushhbhutoria/whatsappWebAPI/-/badge.svg)](https://sourcegraph.com/github.com/Piyushhbhutoria/whatsappWebAPI?badge)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FPiyushhbhutoria%2FwhatsappWebAPI.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FPiyushhbhutoria%2FwhatsappWebAPI?ref=badge_shield)
 
 This project is made with the help of [Rhymen/go-whatsapp - WhatsApp Web API](https://github.com/Rhymen/go-whatsapp).
 Works only for numbers in India for now.
@@ -45,3 +46,7 @@ Send bulk image --> 4
 Exit --> 5
 
 Demo bulk file examples stored in [files](/files) folder
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FPiyushhbhutoria%2FwhatsappWebAPI.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FPiyushhbhutoria%2FwhatsappWebAPI?ref=badge_large)
