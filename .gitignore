@@ -1,7 +1,7 @@
 .idea/
 .DS_Store
 files/*
-testing/*
+testing
 *.gob
 *.csv
 *.jpg
