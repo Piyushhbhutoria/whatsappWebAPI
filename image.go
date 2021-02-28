@@ -3,14 +3,13 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/Rhymen/go-whatsapp"
 )
 
 func image(v sendImage) string {
-	var folder string
-
-	img, err := os.Open(dir + folder + v.Image)
+	img, err := os.Open(filepath.Join(dir, v.Image))
 	if err != nil {
 		log.Printf("Error reading file: %v\n", err)
 		return "Error"

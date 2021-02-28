@@ -1,8 +1,7 @@
 .idea/
 .DS_Store
-files/*
+files
 testing
 *.gob
-*.csv
-*.jpg
 *.log
+whatsappWebAPI
