@@ -20,8 +20,6 @@ var (
 )
 
 func init() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-
 	fmt.Println("running on " + strconv.Itoa(runtime.NumCPU()) + " cores.")
 
 	textChannel = make(chan sendText)
@@ -56,12 +54,12 @@ func main() {
 	}()
 
 	for {
-		fmt.Println("Press 0. Test")
-		fmt.Println("Press 1. Send Text")
-		fmt.Println("Press 2. Send Image")
-		fmt.Println("Press 3. Send Bulk Text")
-		fmt.Println("Press 4. Send Bulk Image")
-		fmt.Println("Press 5. Exit")
+		fmt.Println(`Press 0. Test
+		Press 1. Send Text
+		Press 2. Send Image
+		Press 3. Send Bulk Text
+		Press 4. Send Bulk Image
+		Press 5. Exit`)
 
 		var s int
 		fmt.Scanln(&s)
