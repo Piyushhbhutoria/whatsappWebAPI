@@ -14,8 +14,10 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 )
 
-var historySyncID int32
-var startupTime = time.Now().Unix()
+var (
+	historySyncID int32
+	startupTime   = time.Now().Unix()
+)
 
 func handler(rawEvt interface{}) {
 	switch evt := rawEvt.(type) {
@@ -59,7 +61,7 @@ func handler(rawEvt interface{}) {
 			}
 
 			log.Infof("Received message %s from %s (%s): %s", evt.Info.ID, evt.Info.SourceString(), strings.Join(metaParts, ", "), evt.Message.GetConversation())
-			
+
 			if !strings.Contains(evt.Message.GetConversation(), "status@broadcast") {
 				img := evt.Message.GetImageMessage()
 				if img != nil {

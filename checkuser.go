@@ -9,11 +9,10 @@ func checkuser(args []string) bool {
 	for _, item := range resp {
 		if item.VerifiedName != nil {
 			log.Infof("%s: on whatsapp: %t, JID: %s, business name: %s", item.Query, item.IsIn, item.JID, item.VerifiedName.Details.GetVerifiedName())
-			return true
 		} else {
 			log.Infof("%s: on whatsapp: %t, JID: %s", item.Query, item.IsIn, item.JID)
-			return true
 		}
+		return item.IsIn
 	}
 
 	return false

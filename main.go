@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 	qrterminal "github.com/mdp/qrterminal/v3"
@@ -20,10 +19,8 @@ import (
 )
 
 var (
-	now         = time.Now()
-	sapEndpoint = "https://api.cai.tools.sap/build/v1/dialog"
-	cli         *whatsmeow.Client
-	logLevel    = "INFO"
+	cli      *whatsmeow.Client
+	logLevel = "INFO"
 )
 
 var debugLogs = flag.Bool("debug", false, "Enable debug logs?")
