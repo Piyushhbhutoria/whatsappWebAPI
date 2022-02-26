@@ -38,15 +38,17 @@ go build .
 ## Usage
 
 Press the following number to send message on whatsapp  
-Test --> 0  
-Send Text --> 1  
-Send Image --> 2  
-Send bulk text --> 3  
-Send bulk image --> 4  
-Exit --> 5
+
+```
+Send Text -> send <jid> <text>
+Send Image -> sendimg <jid> <image path> [caption]
+Send Bulk Text -> sendbulk <csv file>
+Send Bulk Image -> sendbulkimg <csv file>
+Exit -> Crtl+C
+```
 
 Demo bulk file examples stored in [files](/files) folder
 
-
 ## License
+
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FPiyushhbhutoria%2FwhatsappWebAPI.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FPiyushhbhutoria%2FwhatsappWebAPI?ref=badge_large)

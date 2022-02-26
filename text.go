@@ -1,24 +1,27 @@
 package main
 
 import (
-	"log"
+	"strings"
 
-	"github.com/Rhymen/go-whatsapp"
+	waProto "go.mau.fi/whatsmeow/binary/proto"
+	"google.golang.org/protobuf/proto"
 )
 
-func texting(v sendText) string {
-	msg := whatsapp.TextMessage{
-		Info: whatsapp.MessageInfo{
-			RemoteJid: "91" + v.Receiver + "@s.whatsapp.net",
-		},
-		Text: v.Message,
+func text(args []string) {
+	recipient, ok := parseJID(args[0])
+	if !ok {
+		return
 	}
-
-	msgID, err := wac.Send(msg)
-	if err != nil {
-		log.Printf("Error sending message: to %v --> %v\n", v.Receiver, err)
-		return "Error"
+	check := checkuser(args)
+	if check {
+		msg := &waProto.Message{Conversation: proto.String(strings.Join(args[1:], " "))}
+		ts, err := cli.SendMessage(recipient, "", msg)
+		if err != nil {
+			log.Errorf("Error sending message: %v", err)
+		} else {
+			log.Infof("Message sent (server timestamp: %s)", ts)
+		}
+	} else {
+		log.Errorf("User doesn't exist: %v", args[0])
 	}
-
-	return "Message Sent -> " + v.Receiver + " : " + msgID
 }

@@ -1,7 +1,7 @@
-.idea/
 .DS_Store
 files
 testing
 *.gob
 *.log
 whatsappWebAPI
+examplestore.db
