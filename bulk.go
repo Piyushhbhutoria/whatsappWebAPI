@@ -55,9 +55,9 @@ func sendBulkImg(file string) string {
 		if each[0] != "" {
 			each[0] = strings.Replace(each[0], " ", "", -1)
 			v := sendImage{
-				Receiver: each[0],
-				Message:  each[1],
-				Image:    each[2],
+				Receiver: each[1],
+				Message:  each[2],
+				Image:    each[3],
 			}
 			imageChannel <- v
 		}
