@@ -1,0 +1,5 @@
+#!/bin/bash
+
+go test ./...
+go build -o whatsappWebAPI .
+./whatsappWebAPI

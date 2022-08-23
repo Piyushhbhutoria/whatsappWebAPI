@@ -4,5 +4,7 @@ testing
 *.gob
 *.log
 whatsappWebAPI
+examplestore.db
+vendor
 *.jpeg
 *.csv

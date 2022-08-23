@@ -1,103 +1,115 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"bufio"
+	"context"
+	"errors"
+	"flag"
 	"os"
-	"path/filepath"
-	"runtime"
-	"strconv"
-	"time"
+	"os/signal"
+	"strings"
+	"syscall"
 
-	"github.com/Rhymen/go-whatsapp"
+	_ "github.com/mattn/go-sqlite3"
+	qrterminal "github.com/mdp/qrterminal/v3"
+	"go.mau.fi/whatsmeow"
+	waBinary "go.mau.fi/whatsmeow/binary"
+	"go.mau.fi/whatsmeow/store/sqlstore"
+	waLog "go.mau.fi/whatsmeow/util/log"
 )
 
 var (
-	wac, _       = whatsapp.NewConn(20 * time.Second)
-	dir, _       = filepath.Abs(filepath.Dir(os.Args[0]))
-	textChannel  chan sendText
-	imageChannel chan sendImage
+	cli      *whatsmeow.Client
+	logLevel = "INFO"
 )
 
-func init() {
-	fmt.Println("running on " + strconv.Itoa(runtime.NumCPU()) + " cores.")
-
-	textChannel = make(chan sendText)
-	imageChannel = make(chan sendImage)
-	wac.SetClientVersion(3, 2123, 7)
-
-	err := login(wac)
-	if err != nil {
-		panic("Error logging in: \n" + err.Error())
-	}
-
-	<-time.After(3 * time.Second)
-}
+var debugLogs = flag.Bool("debug", false, "Enable debug logs?")
+var dbDialect = flag.String("db-dialect", "sqlite3", "Database dialect (sqlite3 or postgres)")
+var dbAddress = flag.String("db-address", "file:examplestore.db?_foreign_keys=on", "Database address")
 
 func main() {
-	go func() {
-		for {
-			request, ok := <-textChannel
-			if ok {
-				log.Println(texting(request))
-			}
-		}
-	}()
+	waBinary.IndentXML = true
+	flag.Parse()
 
+	if *debugLogs {
+		logLevel = "DEBUG"
+	}
+	log = waLog.Stdout("Main", logLevel, true)
+
+	dbLog := waLog.Stdout("Database", logLevel, true)
+	storeContainer, err := sqlstore.New(*dbDialect, *dbAddress, dbLog)
+	if err != nil {
+		log.Errorf("Failed to connect to database: %v", err)
+		return
+	}
+	device, err := storeContainer.GetFirstDevice()
+	if err != nil {
+		log.Errorf("Failed to get device: %v", err)
+		return
+	}
+
+	cli = whatsmeow.NewClient(device, waLog.Stdout("Client", logLevel, true))
+
+	ch, err := cli.GetQRChannel(context.Background())
+	if err != nil {
+		// This error means that we're already logged in, so ignore it.
+		if !errors.Is(err, whatsmeow.ErrQRStoreContainsID) {
+			log.Errorf("Failed to get QR channel: %v", err)
+		}
+	} else {
+		go func() {
+			for evt := range ch {
+				if evt.Event == "code" {
+					qrterminal.GenerateHalfBlock(evt.Code, qrterminal.L, os.Stdout)
+				} else {
+					log.Infof("QR channel result: %s", evt.Event)
+				}
+			}
+		}()
+	}
+
+	cli.AddEventHandler(handler)
+	err = cli.Connect()
+	if err != nil {
+		log.Errorf("Failed to connect: %v", err)
+		return
+	}
+
+	c := make(chan os.Signal)
+	input := make(chan string)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
-		for {
-			request, ok := <-imageChannel
-			if ok {
-				log.Println(image(request))
+		defer close(input)
+		scan := bufio.NewScanner(os.Stdin)
+		for scan.Scan() {
+			line := strings.TrimSpace(scan.Text())
+			if len(line) > 0 {
+				input <- line
 			}
 		}
 	}()
 
 	for {
-		fmt.Println(`Press 0. Test
-		Press 1. Send Text
-		Press 2. Send Image
-		Press 3. Send Bulk Text
-		Press 4. Send Bulk Image
-		Press 5. Exit`)
-
-		var s int
-		fmt.Scanln(&s)
-		if s == 0 {
-			v := sendText{
-				Receiver: "1234567890",
-				Message:  "testing",
+		log.Infof(`Send Text -> send <jid> <text>
+		Send Image -> sendimg <jid> <image path> [caption]
+		Send Bulk Text -> sendbulk <csv file>
+		Send Bulk Image -> sendbulkimg <csv file>
+		Exit -> Crtl+C`)
+		select {
+		case <-c:
+			log.Infof("Interrupt received, exiting")
+			cli.Disconnect()
+			return
+		case cmd := <-input:
+			if len(cmd) == 0 {
+				log.Infof("Stdin closed, exiting")
+				cli.Disconnect()
+				return
 			}
-			log.Println(texting(v))
-		} else if s == 1 {
-			var v sendText
-			fmt.Print("Enter the reciever number: ")
-			fmt.Scanln(&v.Receiver)
-			fmt.Print("Enter the message to be sent: ")
-			fmt.Scanln(&v.Message)
-			log.Println(texting(v))
-		} else if s == 2 {
-			var v sendImage
-			fmt.Print("Enter the reciever number: ")
-			fmt.Scanln(&v.Receiver)
-			fmt.Print("Enter the message to be sent: ")
-			fmt.Scanln(&v.Message)
-			fmt.Print("Enter the image name: ")
-			fmt.Scanln(&v.Image)
-			log.Println(image(v))
-		} else if s == 3 {
-			var file string
-			fmt.Print("Enter the csv file name: ")
-			fmt.Scanln(&file)
-			log.Println(sendBulk(file + ".csv"))
-		} else if s == 4 {
-			var file string
-			fmt.Print("Enter the csv name: ")
-			fmt.Scanln(&file)
-			log.Println(sendBulkImg(file + ".csv"))
-		} else if s == 5 {
-			log.Println("Application exiting...")
-			break
+			args := strings.Fields(cmd)
+			cmd = args[0]
+			args = args[1:]
+			go handleCmd(strings.ToLower(cmd), args)
 		}
 	}
 }
