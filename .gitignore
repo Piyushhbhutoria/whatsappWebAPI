@@ -6,3 +6,5 @@ testing
 whatsappWebAPI
 examplestore.db
 vendor
+*.jpeg
+*.csv
