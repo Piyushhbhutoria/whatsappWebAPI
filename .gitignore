@@ -5,3 +5,4 @@ testing
 *.log
 whatsappWebAPI
 examplestore.db
+vendor
