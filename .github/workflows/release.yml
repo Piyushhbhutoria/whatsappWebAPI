@@ -2,38 +2,24 @@ on: release
 name: Build Release
 jobs:
   release-linux-amd64:
-    name: release linux/amd64
+    name: compile and release
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/386, windows/amd64, darwin/amd64, darwin/arm64
+        goos: [linux, windows, darwin]
+        goarch: ["386", amd64, arm64]
+        exclude:
+          - goarch: "386"
+            goos: darwin
+          - goarch: arm64
+            goos: windows
     steps:
     - uses: actions/checkout@v3
     - name: compile and release
       uses: wangyoucao577/go-release-action@v1
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        goarch: amd64
-        goos: linux
-        extra_files: LICENSE README.md
-  release-darwin-amd64:
-    name: release darwin/amd64
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: compile and release
-      uses: wangyoucao577/go-release-action@v1
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        goarch: amd64
-        goos: darwin
-        extra_files: LICENSE README.md
-  release-windows-amd64:
-    name: release windows/amd64
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: compile and release
-      uses: wangyoucao577/go-release-action@v1
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        goarch: amd64
-        goos: windows
+        goarch: ${{ matrix.goos }}
+        goos: ${{ matrix.goarch }}
         extra_files: LICENSE README.md
