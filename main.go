@@ -28,9 +28,9 @@ func main() {
 	debugLogs := flag.Bool("debug", false, "Enable debug logs?")
 	dbDialect := flag.String("db-dialect", "sqlite3", "Database dialect (sqlite3 or postgres)")
 	dbAddress := flag.String("db-address", "file:db/examplestore.db?_foreign_keys=on", "Database address")
-flag.Parse()
+	flag.Parse()
 
-logLevel := "INFO"
+	logLevel := "INFO"
 	if *debugLogs {
 		logLevel = "DEBUG"
 	}
