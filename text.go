@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"strings"
 
 	waProto "go.mau.fi/whatsmeow/binary/proto"
@@ -15,7 +16,7 @@ func text(args []string) {
 	check := checkuser(args)
 	if check {
 		msg := &waProto.Message{Conversation: proto.String(strings.Join(args[1:], " "))}
-		ts, err := cli.SendMessage(recipient, "", msg)
+		ts, err := cli.SendMessage(context.Background(), recipient, msg)
 		if err != nil {
 			log.Errorf("Error sending message: %v", err)
 		} else {

@@ -9,12 +9,10 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
+	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/appstate"
 	"go.mau.fi/whatsmeow/types"
-	waLog "go.mau.fi/whatsmeow/util/log"
 )
-
-var log waLog.Logger
 
 func parseJID(arg string) (types.JID, bool) {
 	if arg[0] == '+' {
@@ -89,7 +87,7 @@ func handleCmd(cmd string, args []string) {
 		fmt.Println(cli.SendPresence(types.Presence(args[0])))
 	case "chatpresence":
 		jid, _ := types.ParseJID(args[1])
-		fmt.Println(cli.SendChatPresence(types.ChatPresence(args[0]), jid))
+		fmt.Println(cli.SendChatPresence(jid, types.ChatPresence(args[0]), types.ChatPresenceMedia(args[2])))
 	case "privacysettings":
 		resp, err := cli.TryFetchPrivacySettings(false)
 		if err != nil {
@@ -127,7 +125,10 @@ func handleCmd(cmd string, args []string) {
 		if !ok {
 			return
 		}
-		pic, err := cli.GetProfilePictureInfo(jid, len(args) > 1 && args[1] == "preview")
+		params := &whatsmeow.GetProfilePictureParams{
+			Preview: len(args) > 1 && args[1] == "preview",
+		}
+		pic, err := cli.GetProfilePictureInfo(jid, params)
 		if err != nil {
 			log.Errorf("Failed to get avatar: %v", err)
 		} else if pic != nil {

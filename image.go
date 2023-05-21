@@ -38,7 +38,7 @@ func image(args []string) {
 			FileSha256:    uploaded.FileSHA256,
 			FileLength:    proto.Uint64(uint64(len(data))),
 		}}
-		ts, err := cli.SendMessage(recipient, "", msg)
+		ts, err := cli.SendMessage(context.Background(), recipient, msg)
 		if err != nil {
 			log.Errorf("Error sending image message: %v", err)
 		} else {

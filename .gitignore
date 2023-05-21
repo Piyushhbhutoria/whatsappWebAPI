@@ -1,10 +1,9 @@
 .DS_Store
-files
+files_*
 testing
 *.gob
 *.log
 whatsappWebAPI
 examplestore.db
 vendor
-*.jpeg
-*.csv
+history-*

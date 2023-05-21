@@ -19,18 +19,18 @@ import (
 )
 
 var (
-	cli      *whatsmeow.Client
-	logLevel = "INFO"
+	cli *whatsmeow.Client
+	log waLog.Logger
 )
-
-var debugLogs = flag.Bool("debug", false, "Enable debug logs?")
-var dbDialect = flag.String("db-dialect", "sqlite3", "Database dialect (sqlite3 or postgres)")
-var dbAddress = flag.String("db-address", "file:examplestore.db?_foreign_keys=on", "Database address")
 
 func main() {
 	waBinary.IndentXML = true
+	debugLogs := flag.Bool("debug", false, "Enable debug logs?")
+	dbDialect := flag.String("db-dialect", "sqlite3", "Database dialect (sqlite3 or postgres)")
+	dbAddress := flag.String("db-address", "file:db/examplestore.db?_foreign_keys=on", "Database address")
 	flag.Parse()
 
+	logLevel := "INFO"
 	if *debugLogs {
 		logLevel = "DEBUG"
 	}
