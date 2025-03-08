@@ -11,9 +11,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Build
     steps:
-      - uses: actions/setup-go@v5.0.2
+      - uses: actions/setup-go@v5.3.0
         with:
-          go-version: '1.23'
+          go-version: '1.24.1'
       - uses: actions/checkout@v4.1.7
       - run: go mod download
       - name: Build

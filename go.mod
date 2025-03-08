@@ -1,12 +1,12 @@
 module github.com/Piyushhbhutoria/whatsappWebAPI
 
-go 1.23
+go 1.24.1
 
 require (
-	github.com/mattn/go-sqlite3 v1.14.22
+	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/mdp/qrterminal/v3 v3.2.0
-	go.mau.fi/whatsmeow v0.0.0-20240821142752-3d63c6fcc1a7
-	google.golang.org/protobuf v1.34.2
+	go.mau.fi/whatsmeow v0.0.0-20250307203951-daf102be9698
+	google.golang.org/protobuf v1.36.5
 )
 
 require (
@@ -16,11 +16,11 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/rs/zerolog v1.33.0 // indirect
-	go.mau.fi/libsignal v0.1.1 // indirect
-	go.mau.fi/util v0.6.0 // indirect
-	golang.org/x/crypto v0.25.0 // indirect
-	golang.org/x/net v0.27.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
-	golang.org/x/term v0.22.0 // indirect
+	go.mau.fi/libsignal v0.1.2 // indirect
+	go.mau.fi/util v0.8.5 // indirect
+	golang.org/x/crypto v0.33.0 // indirect
+	golang.org/x/net v0.35.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/term v0.29.0 // indirect
 	rsc.io/qr v0.2.0 // indirect
 )

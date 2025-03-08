@@ -20,17 +20,16 @@ func parseJID(arg string) (types.JID, bool) {
 	}
 	if !strings.ContainsRune(arg, '@') {
 		return types.NewJID(arg, types.DefaultUserServer), true
-	} else {
-		recipient, err := types.ParseJID(arg)
-		if err != nil {
-			log.Errorf("Invalid JID %s: %v", arg, err)
-			return recipient, false
-		} else if recipient.User == "" {
-			log.Errorf("Invalid JID %s: no server specified", arg)
-			return recipient, false
-		}
-		return recipient, true
 	}
+	recipient, err := types.ParseJID(arg)
+	if err != nil {
+		log.Errorf("Invalid JID %s: %v", arg, err)
+		return recipient, false
+	} else if recipient.User == "" {
+		log.Errorf("Invalid JID %s: no server specified", arg)
+		return recipient, false
+	}
+	return recipient, true
 }
 
 func handleCmd(cmd string, args []string) {
