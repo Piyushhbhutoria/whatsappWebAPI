@@ -213,7 +213,11 @@ func handleCmd(cmd string, args []string) {
 		if err != nil {
 			panic(err)
 		}
-		defer csvFile.Close()
+		defer func() {
+			if err := csvFile.Close(); err != nil {
+				log.Errorf("Failed to close CSV file: %v", err)
+			}
+		}()
 
 		reader := csv.NewReader(csvFile)
 		reader.FieldsPerRecord = -1
@@ -243,7 +247,11 @@ func handleCmd(cmd string, args []string) {
 		if err != nil {
 			panic(err)
 		}
-		defer csvFile.Close()
+		defer func() {
+			if err := csvFile.Close(); err != nil {
+				log.Errorf("Failed to close CSV file: %v", err)
+			}
+		}()
 
 		reader := csv.NewReader(csvFile)
 		reader.FieldsPerRecord = -1
