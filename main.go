@@ -37,12 +37,12 @@ func main() {
 	log = waLog.Stdout("Main", logLevel, true)
 
 	dbLog := waLog.Stdout("Database", logLevel, true)
-	storeContainer, err := sqlstore.New(*dbDialect, *dbAddress, dbLog)
+	storeContainer, err := sqlstore.New(context.Background(), *dbDialect, *dbAddress, dbLog)
 	if err != nil {
 		log.Errorf("Failed to connect to database: %v", err)
 		return
 	}
-	device, err := storeContainer.GetFirstDevice()
+	device, err := storeContainer.GetFirstDevice(context.Background())
 	if err != nil {
 		log.Errorf("Failed to get device: %v", err)
 		return
