@@ -8,21 +8,17 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func text(args []string) {
-	recipient, ok := parseJID(args[0])
-	if !ok {
-		return
-	}
-	check := checkuser(args)
-	if check {
+func text(ctx context.Context, args []string) {
+	check, item := findUsers(ctx, args)
+	if check && item.IsIn {
 		msg := &waE2E.Message{Conversation: proto.String(strings.Join(args[1:], " "))}
-		ts, err := cli.SendMessage(context.Background(), recipient, msg)
+		ts, err := cli.SendMessage(ctx, item.JID, msg)
 		if err != nil {
 			log.Errorf("Error sending message: %v", err)
 		} else {
 			log.Infof("Message sent (server timestamp: %s)", ts)
 		}
 	} else {
-		log.Errorf("User doesn't exist: %v", args[0])
+		log.Errorf("User %s doesn't exist", item.Query)
 	}
 }

@@ -10,46 +10,87 @@
 ![GitHub All Releases](https://img.shields.io/github/downloads/Piyushhbhutoria/whatsappWebAPI/total)
 ![GitHub repo size](https://img.shields.io/github/repo-size/Piyushhbhutoria/whatsappWebAPI)
 
-This project is made with the help of [Rhymen/go-whatsapp - WhatsApp Web API](https://github.com/Rhymen/go-whatsapp).
-Works only for numbers in India for now.
+A WhatsApp Web API built with Go using [whatsmeow](https://github.com/tulir/whatsmeow). Send messages, images, and manage WhatsApp interactions programmatically.
+
+**Important:** Phone numbers must include the country code (e.g., `91XXXXXXXXXX` for India).
 
 ## Setup
 
-1. Download the latest binary release.
-2. run on your system.
+**Option 1:** Download the latest binary from [releases](https://github.com/Piyushhbhutoria/whatsappWebAPI/releases)
 
-or create your binary locally as below
+**Option 2:** Build from source (requires Go 1.25+)
 
-Note : (Requirements) Golang setup on your local
-
-1. Download the repo
-2. run commands below
-
-```go
-go get .
-go build .
+```bash
+git clone https://github.com/Piyushhbhutoria/whatsappWebAPI.git
+cd whatsappWebAPI
+make run
 ```
 
-3. Run the binary
+**Configuration flags:**
 
-## Steps to use -
-
-1. Scan the QR code with whatsapp web
-2. Put your lists for bulk message and pictures to send in same folder
+- `-debug`: Enable debug logs
+- `-db-dialect`: `sqlite3` or `postgres` (default: `sqlite3`)
+- `-db-address`: Database connection string
 
 ## Usage
 
-Press the following number to send message on whatsapp  
+1. Run the application and scan the QR code with WhatsApp Web
+2. Use commands interactively:
 
-```
-Send Text -> send <jid> <text>
-Send Image -> sendimg <jid> <image path> [caption]
-Send Bulk Text -> sendbulk <csv file>
-Send Bulk Image -> sendbulkimg <csv file>
-Exit -> Crtl+C
+### Commands
+
+**Messaging:**
+
+- `send <jid> <text>` - Send text message
+- `sendimg <jid> <image path> [caption]` - Send image
+- `sendbulk <csv file>` - Bulk text (CSV: `<jid>,<message>`)
+- `sendbulkimg <csv file>` - Bulk images (CSV: `<jid>,<image path>,[caption]`)
+
+**User Management:**
+
+- `checkuser <phone numbers...>` - Check if users are on WhatsApp
+- `getuser <jids...>` - Get user info
+- `getavatar <jid> [preview]` - Get user avatar
+
+**Groups:**
+
+- `listgroups` - List all groups
+- `getgroup <group_jid>` - Get group info
+- `getinvitelink <group_jid> [--reset]` - Get/reset invite link
+- `queryinvitelink <link>` - Query invite link info
+- `joininvitelink <link>` - Join group via invite link
+
+**Presence & Privacy:**
+
+- `subscribepresence <jid>` - Subscribe to presence updates
+- `presence <presence_type>` - Send presence
+- `chatpresence <presence_type> <jid> [media_type]` - Send chat presence
+- `privacysettings` - Get privacy settings
+
+**Utility:**
+
+- `reconnect` - Reconnect to WhatsApp
+- `logout` - Logout from WhatsApp
+- `appstate <types...> [resync]` - Sync app state
+- `Ctrl+C` - Exit
+
+### CSV Format Examples
+
+**Bulk Text:**
+
+```csv
+919876543210,Hello from bulk message
+919876543211,Another message
 ```
 
-Demo bulk file examples stored in [files](/files) folder
+**Bulk Image:**
+
+```csv
+919876543210,/path/to/image1.jpg,Caption 1
+919876543211,/path/to/image2.jpg,Caption 2
+```
+
+Demo files available in [files](/files) folder.
 
 ## License
 

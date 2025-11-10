@@ -1,11 +1,11 @@
 package main
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 
@@ -14,25 +14,8 @@ import (
 	"go.mau.fi/whatsmeow/types"
 )
 
-func parseJID(arg string) (types.JID, bool) {
-	if arg[0] == '+' {
-		arg = arg[1:]
-	}
-	if !strings.ContainsRune(arg, '@') {
-		return types.NewJID(arg, types.DefaultUserServer), true
-	}
-	recipient, err := types.ParseJID(arg)
-	if err != nil {
-		log.Errorf("Invalid JID %s: %v", arg, err)
-		return recipient, false
-	} else if recipient.User == "" {
-		log.Errorf("Invalid JID %s: no server specified", arg)
-		return recipient, false
-	}
-	return recipient, true
-}
-
 func handleCmd(cmd string, args []string) {
+	ctx := context.Background()
 	switch cmd {
 	case "reconnect":
 		cli.Disconnect()
@@ -41,7 +24,7 @@ func handleCmd(cmd string, args []string) {
 			log.Errorf("Failed to connect: %v", err)
 		}
 	case "logout":
-		err := cli.Logout()
+		err := cli.Logout(ctx)
 		if err != nil {
 			log.Errorf("Error logging out: %v", err)
 		} else {
@@ -58,7 +41,7 @@ func handleCmd(cmd string, args []string) {
 		}
 		resync := len(args) > 1 && args[1] == "resync"
 		for _, name := range names {
-			err := cli.FetchAppState(name, resync, false)
+			err := cli.FetchAppState(ctx, name, resync, false)
 			if err != nil {
 				log.Errorf("Failed to sync app state: %v", err)
 			}
@@ -68,27 +51,28 @@ func handleCmd(cmd string, args []string) {
 			log.Errorf("Usage: checkuser <phone numbers...>")
 			return
 		}
-		checkuser(args)
+		findUsers(ctx, args)
 	case "subscribepresence":
 		if len(args) < 1 {
 			log.Errorf("Usage: subscribepresence <jid>")
 			return
 		}
-		jid, ok := parseJID(args[0])
-		if !ok {
+		jid, err := types.ParseJID(args[0])
+		if err != nil {
+			log.Errorf("Invalid JID %s: %v", args[0], err)
 			return
 		}
-		err := cli.SubscribePresence(jid)
+		err = cli.SubscribePresence(ctx, jid)
 		if err != nil {
 			fmt.Println(err)
 		}
 	case "presence":
-		fmt.Println(cli.SendPresence(types.Presence(args[0])))
+		fmt.Println(cli.SendPresence(ctx, types.Presence(args[0])))
 	case "chatpresence":
 		jid, _ := types.ParseJID(args[1])
-		fmt.Println(cli.SendChatPresence(jid, types.ChatPresence(args[0]), types.ChatPresenceMedia(args[2])))
+		fmt.Println(cli.SendChatPresence(ctx, jid, types.ChatPresence(args[0]), types.ChatPresenceMedia(args[2])))
 	case "privacysettings":
-		resp, err := cli.TryFetchPrivacySettings(false)
+		resp, err := cli.TryFetchPrivacySettings(ctx, false)
 		if err != nil {
 			fmt.Println(err)
 		} else {
@@ -101,13 +85,14 @@ func handleCmd(cmd string, args []string) {
 		}
 		var jids []types.JID
 		for _, arg := range args {
-			jid, ok := parseJID(arg)
-			if !ok {
+			jid, err := types.ParseJID(arg)
+			if err != nil {
+				log.Errorf("Invalid JID %s: %v", arg, err)
 				return
 			}
 			jids = append(jids, jid)
 		}
-		resp, err := cli.GetUserInfo(jids)
+		resp, err := cli.GetUserInfo(ctx, jids)
 		if err != nil {
 			log.Errorf("Failed to get user info: %v", err)
 		} else {
@@ -120,14 +105,15 @@ func handleCmd(cmd string, args []string) {
 			log.Errorf("Usage: getavatar <jid>")
 			return
 		}
-		jid, ok := parseJID(args[0])
-		if !ok {
+		jid, err := types.ParseJID(args[0])
+		if err != nil {
+			log.Errorf("Invalid JID %s: %v", args[0], err)
 			return
 		}
 		params := &whatsmeow.GetProfilePictureParams{
 			Preview: len(args) > 1 && args[1] == "preview",
 		}
-		pic, err := cli.GetProfilePictureInfo(jid, params)
+		pic, err := cli.GetProfilePictureInfo(ctx, jid, params)
 		if err != nil {
 			log.Errorf("Failed to get avatar: %v", err)
 		} else if pic != nil {
@@ -140,21 +126,19 @@ func handleCmd(cmd string, args []string) {
 			log.Errorf("Usage: getgroup <jid>")
 			return
 		}
-		group, ok := parseJID(args[0])
-		if !ok {
-			return
-		} else if group.Server != types.GroupServer {
-			log.Errorf("Input must be a group JID (@%s)", types.GroupServer)
+		group, err := types.ParseJID(args[0])
+		if err != nil {
+			log.Errorf("Invalid JID %s: %v", args[0], err)
 			return
 		}
-		resp, err := cli.GetGroupInfo(group)
+		resp, err := cli.GetGroupInfo(ctx, group)
 		if err != nil {
 			log.Errorf("Failed to get group info: %v", err)
 		} else {
 			log.Infof("Group info: %+v", resp)
 		}
 	case "listgroups":
-		groups, err := cli.GetJoinedGroups()
+		groups, err := cli.GetJoinedGroups(ctx)
 		if err != nil {
 			log.Errorf("Failed to get group list: %v", err)
 		} else {
@@ -167,14 +151,15 @@ func handleCmd(cmd string, args []string) {
 			log.Errorf("Usage: getinvitelink <jid> [--reset]")
 			return
 		}
-		group, ok := parseJID(args[0])
-		if !ok {
+		group, err := types.ParseJID(args[0])
+		if err != nil {
+			log.Errorf("Invalid JID %s: %v", args[0], err)
 			return
 		} else if group.Server != types.GroupServer {
 			log.Errorf("Input must be a group JID (@%s)", types.GroupServer)
 			return
 		}
-		resp, err := cli.GetGroupInviteLink(group, len(args) > 1 && args[1] == "--reset")
+		resp, err := cli.GetGroupInviteLink(ctx, group, len(args) > 1 && args[1] == "--reset")
 		if err != nil {
 			log.Errorf("Failed to get group invite link: %v", err)
 		} else {
@@ -185,7 +170,7 @@ func handleCmd(cmd string, args []string) {
 			log.Errorf("Usage: queryinvitelink <link>")
 			return
 		}
-		resp, err := cli.GetGroupInfoFromLink(args[0])
+		resp, err := cli.GetGroupInfoFromLink(ctx, args[0])
 		if err != nil {
 			log.Errorf("Failed to resolve group invite link: %v", err)
 		} else {
@@ -196,7 +181,7 @@ func handleCmd(cmd string, args []string) {
 			log.Errorf("Usage: querybusinesslink <link>")
 			return
 		}
-		resp, err := cli.ResolveBusinessMessageLink(args[0])
+		resp, err := cli.ResolveBusinessMessageLink(ctx, args[0])
 		if err != nil {
 			log.Errorf("Failed to resolve business message link: %v", err)
 		} else {
@@ -207,7 +192,7 @@ func handleCmd(cmd string, args []string) {
 			log.Errorf("Usage: acceptinvitelink <link>")
 			return
 		}
-		groupID, err := cli.JoinGroupWithLink(args[0])
+		groupID, err := cli.JoinGroupWithLink(ctx, args[0])
 		if err != nil {
 			log.Errorf("Failed to join group via invite link: %v", err)
 		} else {
@@ -218,7 +203,7 @@ func handleCmd(cmd string, args []string) {
 			log.Errorf("Usage: send <jid> <text>")
 			return
 		}
-		text(args)
+		text(ctx, args)
 	case "sendbulk":
 		if len(args) < 1 {
 			log.Errorf("Usage: sendbulk <csv file>")
@@ -228,7 +213,11 @@ func handleCmd(cmd string, args []string) {
 		if err != nil {
 			panic(err)
 		}
-		defer csvFile.Close()
+		defer func() {
+			if err := csvFile.Close(); err != nil {
+				log.Errorf("Failed to close CSV file: %v", err)
+			}
+		}()
 
 		reader := csv.NewReader(csvFile)
 		reader.FieldsPerRecord = -1
@@ -240,7 +229,7 @@ func handleCmd(cmd string, args []string) {
 
 		for _, each := range csvData {
 			if each[0] != "" {
-				text(each)
+				text(ctx, each)
 			}
 		}
 	case "sendimg":
@@ -248,7 +237,7 @@ func handleCmd(cmd string, args []string) {
 			log.Errorf("Usage: sendimg <jid> <image path> [caption]")
 			return
 		}
-		image(args)
+		image(ctx, args)
 	case "sendbulkimg":
 		if len(args) < 1 {
 			log.Errorf("Usage: sendbulk <csv file>")
@@ -258,7 +247,11 @@ func handleCmd(cmd string, args []string) {
 		if err != nil {
 			panic(err)
 		}
-		defer csvFile.Close()
+		defer func() {
+			if err := csvFile.Close(); err != nil {
+				log.Errorf("Failed to close CSV file: %v", err)
+			}
+		}()
 
 		reader := csv.NewReader(csvFile)
 		reader.FieldsPerRecord = -1
@@ -269,7 +262,7 @@ func handleCmd(cmd string, args []string) {
 		}
 
 		for _, each := range csvData {
-			image(each)
+			image(ctx, each)
 		}
 	}
 }

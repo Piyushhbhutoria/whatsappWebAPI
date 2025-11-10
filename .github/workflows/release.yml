@@ -17,11 +17,11 @@ jobs:
           - goarch: arm64
             goos: windows
     steps:
-    - uses: actions/checkout@v4.1.7
-    - name: compile and release
-      uses: wangyoucao577/go-release-action@v1.53
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        goarch: ${{ matrix.goarch }}
-        goos: ${{ matrix.goos }}
-        extra_files: LICENSE README.md
+      - uses: actions/checkout@v5
+      - name: compile and release
+        uses: wangyoucao577/go-release-action@v1.53
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goarch: ${{ matrix.goarch }}
+          goos: ${{ matrix.goos }}
+          extra_files: LICENSE README.md

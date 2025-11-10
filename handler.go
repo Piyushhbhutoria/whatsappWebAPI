@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"mime"
@@ -23,7 +24,7 @@ func handler(rawEvt interface{}) {
 	switch evt := rawEvt.(type) {
 	case *events.AppStateSyncComplete:
 		if len(cli.Store.PushName) > 0 && evt.Name == appstate.WAPatchCriticalBlock {
-			err := cli.SendPresence(types.PresenceAvailable)
+			err := cli.SendPresence(context.Background(), types.PresenceAvailable)
 			if err != nil {
 				log.Warnf("Failed to send available presence: %v", err)
 			} else {
@@ -36,7 +37,7 @@ func handler(rawEvt interface{}) {
 		}
 		// Send presence available when connecting and when the pushname is changed.
 		// This makes sure that outgoing messages always have the right pushname.
-		err := cli.SendPresence(types.PresenceAvailable)
+		err := cli.SendPresence(context.Background(), types.PresenceAvailable)
 		if err != nil {
 			log.Warnf("Failed to send available presence: %v", err)
 		} else {
@@ -65,7 +66,7 @@ func handler(rawEvt interface{}) {
 			if !strings.Contains(evt.Message.GetConversation(), "status@broadcast") {
 				img := evt.Message.GetImageMessage()
 				if img != nil {
-					data, err := cli.Download(img)
+					data, err := cli.Download(context.Background(), img)
 					if err != nil {
 						log.Errorf("Failed to download image: %v", err)
 						return
@@ -82,9 +83,10 @@ func handler(rawEvt interface{}) {
 			}
 		}
 	case *events.Receipt:
-		if evt.Type == types.ReceiptTypeRead || evt.Type == types.ReceiptTypeReadSelf {
+		switch evt.Type {
+		case types.ReceiptTypeRead, types.ReceiptTypeReadSelf:
 			log.Infof("%v was read by %s at %s", evt.MessageIDs, evt.SourceString(), evt.Timestamp)
-		} else if evt.Type == types.ReceiptTypeDelivered {
+		case types.ReceiptTypeDelivered:
 			log.Infof("%s was delivered to %s at %s", evt.MessageIDs[0], evt.SourceString(), evt.Timestamp)
 		}
 	case *events.Presence:
