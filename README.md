@@ -18,7 +18,7 @@ A WhatsApp Web API built with Go using [whatsmeow](https://github.com/tulir/what
 
 **Option 1:** Download the latest binary from [releases](https://github.com/Piyushhbhutoria/whatsappWebAPI/releases)
 
-**Option 2:** Build from source (requires Go 1.25+)
+**Option 2:** Build from source (requires Go 1.26+)
 
 ```bash
 git clone https://github.com/Piyushhbhutoria/whatsappWebAPI.git
